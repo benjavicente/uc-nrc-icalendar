@@ -1,0 +1,17 @@
+# OS
+*.DS_STORE
+._*
+Thumbs.db
+*.lnk
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Workspace
+.vscode/
+test*.py
+
+
+# Output
+output/
