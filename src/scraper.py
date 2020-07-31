@@ -1,43 +1,48 @@
-"Scraper de buscacursos"
+"Scraper of BuscaCursos UC"
 
-from html import unescape as html_unescape
-from collections import defaultdict
-from itertools import product
-from multiprocessing.dummy import Pool
-
-import urllib.request as rq
 import datetime as dt
 import re
+import urllib.request as rq
+
+from collections import defaultdict
+from html import unescape as html_unescape
+from itertools import product
+from multiprocessing.dummy import Pool as ThreadPool
+from typing import Iterable
+
 
 from bs4 import BeautifulSoup
 
 
-_COURSES_COLUMNS_NAMES = (
-    "NCR",
-    "Sigla",
+COURSES_COLUMNS_NAMES = (
+    "ncr",
+    "code",
     "",
     "",
-    "Seccion",
-    "",
-    "",
-    "",
-    "",
-    "Nombre",
-    "Profesor",
-    "Campus",
+    "section",
     "",
     "",
     "",
     "",
-    "Modulos",
+    "name",
+    "teachers",
+    "campus",
+    "",
+    "",
+    "",
+    "",
+    "modules",
     "",
 )
 
-_MATCH_RESULT_ROW = {"class": re.compile("resultados")}
+NCR_INDEX = 0
+TEACHER_INDEX = 10
 
-_TODAY = dt.date.today()
-_CURRENT_YEAR = _TODAY.year
-_CURRENT_SEMESTER = _TODAY.month // 6 + 1
+MATCH_RESULT_ROW = {"class": re.compile("resultados")}
+
+TODAY = dt.date.today()
+CURRENT_YEAR = TODAY.year
+CURRENT_SEMESTER = TODAY.month // 6 + 1
 
 
 def _get_soup(url: str) -> BeautifulSoup:
@@ -49,26 +54,22 @@ def _get_soup(url: str) -> BeautifulSoup:
 def _get_courses_address(**parameters) -> str:
     return (
         "http://buscacursos.uc.cl/"
-        "?cxml_semestre={p[year]}-{p[semester]}"
-        "&cxml_sigla={p[cod]}"
-        "&cxml_nrc={p[nrc]}"
-        "&cxml_nombre={p[name]}"
-        "&cxml_categoria={p[category]}"
-        "&cxml_area_fg={p[area]}"
-        "&cxml_formato_cur={p[format]}"
-        "&cxml_profesor={p[prof]}"
-        "&cxml_campus={p[campus]}"
-        "&cxml_unidad_academica={p[academic_unit]}"
-        "&cxml_horario_tipo_busqueda={p[special_1]}"
-        "&cxml_horario_tipo_busqueda_actividad={p[special_2]}".format(
-            p=defaultdict(str, parameters)
-        )
-    )
+        "?cxml_semestre={year}-{semester}"
+        "&cxml_sigla={code}"
+        "&cxml_nrc={nrc}"
+        "&cxml_nombre={name}"
+        "&cxml_categoria={category}"
+        "&cxml_area_fg={area}"
+        "&cxml_formato_cur={format}"
+        "&cxml_profesor={teacher}"
+        "&cxml_campus={campus}"
+        "&cxml_unidad_academica={academic_unit}"
+    ).format_map(defaultdict(str, parameters))
 
 
 def _clean_courses_row(row) -> dict:
     row_data = dict()
-    for name, data in zip(_COURSES_COLUMNS_NAMES, row.find_all("td", recursive=False)):
+    for name, data in zip(COURSES_COLUMNS_NAMES, row.find_all("td", recursive=False)):
         # Ve si se omite la columna si no tiene nombre
         if not name:
             continue
@@ -77,38 +78,43 @@ def _clean_courses_row(row) -> dict:
         if table:
             modules = defaultdict(list)
             for mod_row in data.find_all("tr"):
-                mod, mod_type, _ = map(lambda r: r.text.strip(), mod_row.find_all("td"))
+                # TODO: Guardar la sala en el que se realizan las clases
+                mod, type_, _ = map(lambda r: r.text.strip(), mod_row.find_all("td"))
                 days, hours = mod.split(":")
                 days = days.split("-")
                 hours = hours.split(",")
-                modules[mod_type].extend(product(days, hours))
+                modules[type_].extend(product(days, hours))
             row_data[name] = modules
             continue
         # Ve los profesores y los separa
-        if name == "Profesor":
+        if name == COURSES_COLUMNS_NAMES[TEACHER_INDEX]:
             row_data[name] = tuple(data.text.strip().split(", "))
             continue
         # La información es un str
         text = data.text.strip()
         # Se ve si el resultado es numérico y no NCR
-        if name != "NCR" and text.isnumeric():
+        if name != COURSES_COLUMNS_NAMES[NCR_INDEX] and text.isnumeric():
             text = int(text)
         # En cualquier otro caso guarda el resultado tal cual
         row_data[name] = text
     return row_data
 
 
-def get_courses(semester=_CURRENT_SEMESTER, year=_CURRENT_YEAR, **parameters) -> list:
-    "Obtiene los cursos de BuscaCursos, dado los parámetros"
+def get_courses(semester=CURRENT_SEMESTER, year=CURRENT_YEAR, **parameters) -> list:
+    """Get courses a list of courses that matches the given parameters.
+    A maximum of 50 courses can be scraped in the same request.
+
+    Parameters:
+       year, semester, nrc, code, name, category, area,
+       format, teacher, campus, academic_unit
+    """
     url = _get_courses_address(semester=semester, year=year, **parameters)
     soup = _get_soup(url)
-    results = soup.find_all("tr", _MATCH_RESULT_ROW)
-    return tuple(map(_clean_courses_row, results))  # Puede ser lista o set también
+    results = soup.find_all("tr", MATCH_RESULT_ROW)
+    return list(map(_clean_courses_row, results))
 
 
-def get_multiple_courses(nrc_codes=()):
-    "Obtiene multiples cursos a partir de su NFC"
-    # https://stackoverflow.com/questions/2846653/how-can-i-use-threading-in-python
-    with Pool() as pool:
-        # Si no hay resultados (r vacío) no se considera
-        return [r[0] for r in pool.map(lambda nrc: get_courses(nrc=nrc), nrc_codes) if r]
+def get_specific_courses(nrc_codes: Iterable = ()) -> list:
+    "Get multiple courses from BuscaCursos UC with their respective NCR"
+    with ThreadPool() as pool:
+        return pool.map(lambda nrc: get_courses(nrc=nrc), nrc_codes)

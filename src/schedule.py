@@ -1,4 +1,4 @@
-"""Horarios"""
+"""Schedule"""
 
 from collections import defaultdict
 from datetime import date
@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import arrow
 
-from scraper import get_multiple_courses
+from scraper import get_specific_courses
 
 
 def str_scape(string: str) -> str:
@@ -34,7 +34,7 @@ class Module:
         self._data = course_json
 
     def __repr__(self):
-        return "{Sigla}-{Seccion}".format_map(self._data)
+        return "{code}-{section}".format_map(self._data)
 
     def __str__(self):
         if self.display_color:
@@ -45,13 +45,13 @@ class Module:
     def name(self):
         """Nombre del módulo"""
         if self._type == "CLAS":
-            return self._data["Nombre"]
-        return self._type + " " + self._data["Nombre"]
+            return self._data["name"]
+        return self._type + " " + self._data["name"]
 
     @property
     def description(self):
         """Descripción del módulo"""
-        return "\n".join([repr(self), ", ".join(self._data["Profesor"]), self._data["Campus"]])
+        return "\n".join([repr(self), ", ".join(self._data["teachers"]), self._data["campus"]])
 
 
 class Calendar:
@@ -62,15 +62,15 @@ class Calendar:
         self.courses_names = set()
 
     def import_courses(self, nrc: set):
-        """Importa el horario de los cusos a partir de su NRC"""
+        """Importa el horario de los cursos a partir de su NRC"""
         self.schedule.clear()
         self.courses_names.clear()
 
-        courses_list = get_multiple_courses(nrc)
+        results = get_specific_courses(nrc)
 
-        for course in courses_list:
-            self.courses_names.add(course["Nombre"])
-            for module_type, modules in course["Modulos"].items():
+        for course in (c[0] for c in results if c):
+            self.courses_names.add(course["name"])
+            for module_type, modules in course["modules"].items():
                 for day, mod in modules:
                     self.schedule[day + mod].append(Module(module_type, course))
 
