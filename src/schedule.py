@@ -1,188 +1,296 @@
-"""Schedule"""
+"""Schedule of Buscacursos UC"""
 
-from collections import defaultdict
-from datetime import date
+from __future__ import annotations
+
+from dataclasses import dataclass
+from operator import attrgetter, itemgetter
+from typing import Iterable, Set
 from uuid import uuid4
 
 import arrow
 
+from constants import (
+    CALENDAR_TEMPLETE,
+    BC_TO_ICS_DAY_NAMES,
+    EVENT_TEMPLETE,
+    FIRST_DAY,
+    ICS_ARROW_DATETIME_FORMAT,
+    ICS_ARROW_TIME_FORMAT,
+    ICS_ARROW_DATE_FORMAT,
+    LAST_DAY,
+    HOLIDAYS,
+    EX_DATE_TEMPLATE,
+    MODULE_START_TIME,
+    MODULE_LENGTH,
+)
+
 from scraper import get_specific_courses
 
 
-def str_scape(string: str) -> str:
-    """Escapa los caracteres especiales de un string"""
+def scape_str(string: str) -> str:
+    """Scapes a string"""
     return repr(string).strip("'")
 
 
-class Module:
-    """Módulo"""
-
-    # https://stackoverflow.com/questions/287871/how-to-print-colored-text-in-python
-    display_color = True
-    color_type = defaultdict(
-        lambda: "\033[41m{:^9}\033[0m",
-        {
-            "CLAS": "\033[41m{:^9}\033[0m",
-            "LAB": "\033[44m{:^9}\033[0m",
-            "AYU": "\033[42m{:^9}\033[0m",
-            "TAL": "\033[45m{:^9}\033[0m",
-        },
+def get_ex_dates(start: arrow.Arrow) -> str:
+    """Get a str with ExDates of the iCalendar"""
+    # TODO: retornar solo los feriados que estén en el mismo día de la semana
+    return "\n".join(
+        map(
+            lambda h, s=start: EX_DATE_TEMPLATE.substitute(
+                {"date": h.format(ICS_ARROW_DATE_FORMAT), "start": s.format(ICS_ARROW_TIME_FORMAT),}
+            ),
+            HOLIDAYS,
+        )
     )
 
-    def __init__(self, type_: str, course_json):
-        self._type = type_
-        self._data = course_json
+
+@dataclass(frozen=True)
+class Module:
+    """Module of a course"""
+
+    day: str
+    mod: str
+    type_: str
+    classroom: str
+    _metadata: dict
+
+    @property
+    def code(self) -> str:
+        """Code of the course"""
+        return "-".join(itemgetter("code", "section")(self._metadata))
+
+    @property
+    def name(self) -> str:
+        """Name of the module"""
+        if self.type_ == "CLAS":
+            return self._metadata["name"]
+        return " ".join((self.type_, self._metadata["name"]))
+
+    @property
+    def description(self) -> str:
+        """Description of the module"""
+        return "\n".join(
+            (self.code, ", ".join(self._metadata["teachers"]), self._metadata["campus"])
+        )
+
+    def __hash__(self):
+        return hash((self.day, self.mod, self.type_, self.classroom))
 
     def __repr__(self):
-        return "{code}-{section}".format_map(self._data)
+        return f"<{type(self).__name__}({self.day}{self.mod}:{self.code})>"
 
-    def __str__(self):
-        if self.display_color:
-            return self.color_type[self._type].format(repr(self))
-        return repr(self)
+
+class Event:
+    """Group of modules that makes one VEvent.
+    Modules must have the same type and code.
+    """
+
+    def __init__(self, main_module: Module, modules: Set[Module]):
+        """
+        main_module: module where the VEvent will get the metadata.
+        modules: a set of modules that makes the VEvent.
+        """
+        self._modules: Set[Module] = modules
+        self.__main_module: Module = main_module
+        self.days: Set[str] = {main_module.day}
+        self.mods: Set[str] = {main_module.mod}
+
+    # TODO: mejor manera de acceder a code, type_, name & description
+    @property
+    def code(self):
+        return self.__main_module.code
+
+    @property
+    def type_(self):
+        return self.__main_module.type_
 
     @property
     def name(self):
-        """Nombre del módulo"""
-        if self._type == "CLAS":
-            return self._data["name"]
-        return self._type + " " + self._data["name"]
+        return self.__main_module.name
 
     @property
     def description(self):
-        """Descripción del módulo"""
-        return "\n".join([repr(self), ", ".join(self._data["teachers"]), self._data["campus"]])
+        return self.__main_module.description
 
+    @classmethod
+    def new(cls, module: Module) -> Event:
+        """Makes a new event form one module"""
+        return cls(module, {module})
 
-class Calendar:
-    """Calendario compuesto por módulos"""
+    def __repr__(self):
+        join = "".join
+        return f"<{type(self).__name__}({join(self.days)}{join(self.mods)}:{self.code})>"
 
-    def __init__(self):
-        self.schedule = defaultdict(list)
-        self.courses_names = set()
+    def __iadd__(self, other_event: Event):
+        self._modules |= other_event._modules
+        self.days |= other_event.days
+        self.mods |= other_event.mods
 
-    def import_courses(self, nrc: set):
-        """Importa el horario de los cursos a partir de su NRC"""
-        self.schedule.clear()
-        self.courses_names.clear()
+    def is_expandable_to(self, other_event: Event) -> bool:
+        """Checks if a event can be expanded"""
+        # Example:
+        # A C ~ D
+        # B ~ ~ E
+        # ~ F ~ ~
+        # - A can expand vertically to B if they are the same code and type
+        # - AB can expand horizontally to DE if hey are the same code and type
+        # - AC can expand horizontally to D if hey are the same code and type
+        # - AB can't expand to C because columns must have the same size
+        # - C cant expand to F because there is a gap in the column
 
-        results = get_specific_courses(nrc)
+        if self.code != other_event.code or self.type_ != other_event.type_:
+            return False
 
-        for course in (c[0] for c in results if c):
-            self.courses_names.add(course["name"])
-            for module_type, modules in course["modules"].items():
-                for day, mod in modules:
-                    self.schedule[day + mod].append(Module(module_type, course))
-
-    def __str__(self):
-        # Se crea una tabla
-        rep = "  | " + "".join(map(lambda d: format(d, "^11"), "LMWJVS")) + "\n"
-        for mod in map(str, range(1, 9)):
-            rep += f"{mod} | "
-            for day in "LMWJVS":
-                courses = self.schedule[day + mod]
-                if courses:
-                    rep += format(str(courses[0]), "^20")
-                else:
-                    rep += " " * 11
-            rep += "\n"
-        return rep
+        # TODO: testing
+        vert = list(map(int, self.mods | other_event.mods))
+        return (
+            all((n in vert for n in range(min(vert), max(vert) + 1)))
+            if self.days == other_event.days
+            else self.mods == other_event.mods
+        )
 
     def to_ics(self) -> str:
-        """Retorna un str con el calendario en formato ics"""
-        # TODO: Limpiar
+        """Returns the representation of the object in the iCalendar format"""
+        first_module = str(min(map(int, self.mods)))
+        last_module = str(max(map(int, self.mods)))
 
-        ics_time_format = "YYYYMMDDTHHmmss"
-        first_day = arrow.get(date(2020, 8, 10), "Chile/Continental")
-        final_day = arrow.get(date(2020, 12, 4), "Chile/Continental")
+        # pylint: disable=undefined-loop-variable
+        for day_number, day_letter in enumerate(BC_TO_ICS_DAY_NAMES.keys()):
+            if day_letter in self.days:
+                break
 
-        first_monday = first_day.shift(weekday=0)
-        mod_length = {"hours": 1, "minutes": 20}
+        base_day = FIRST_DAY.shift(weekday=day_number)
 
-        start_time = {
-            "1": {"hour": 8, "minute": 30},
-            "2": {"hour": 10, "minute": 00},
-            "3": {"hour": 11, "minute": 30},
-            "4": {"hour": 14, "minute": 00},
-            "5": {"hour": 15, "minute": 30},
-            "6": {"hour": 17, "minute": 00},
-            "7": {"hour": 18, "minute": 30},
-            "8": {"hour": 20, "minute": 00},
+        start = base_day.replace(**MODULE_START_TIME[first_module])
+        end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
+
+        days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in self.days))
+
+        mapping = {
+            "start": start.format(ICS_ARROW_DATETIME_FORMAT),
+            "end": end.format(ICS_ARROW_DATETIME_FORMAT),
+            "last": LAST_DAY.format(ICS_ARROW_DATETIME_FORMAT),
+            "days": days,
+            "ex_dates": get_ex_dates(start),
+            "now": arrow.get().format(ICS_ARROW_DATETIME_FORMAT),
+            "uid": uuid4(),
+            "description": scape_str(self.description),
+            "summary": scape_str(self.name),
         }
+        return EVENT_TEMPLETE.substitute(mapping)
 
-        holidays = {
-            date(2020, 8, 15),  # La Asunción de la Virgen
-            date(2020, 9, 18),  # 1ra Junta Nacional de Gobierno
-            date(2020, 9, 19),  # Día de las Glorias del Ejército
-            date(2020, 9, 21),  # Semana de receso
-            date(2020, 9, 22),  # Semana de receso
-            date(2020, 9, 23),  # Semana de receso
-            date(2020, 9, 24),  # Semana de receso
-            date(2020, 9, 25),  # Semana de receso
-            date(2020, 9, 26),  # Semana de receso
-            date(2020, 10, 12),  # Encuentro de Dos Mundos
-            date(2020, 10, 31),  # Día Nacional de las Iglesias Evangélicas y Protestantes
-        }
 
-        def remove_holidays(start_arw: arrow.Arrow) -> list:
-            """Retorna una lista con los feriados a remover"""
-            start = start_arw.format("HHmmss")
-            return list(
-                map(
-                    lambda d: f"EXDATE;TZID=America/Santiago:{d.strftime(r'%Y%m%d')}T{start}",
-                    holidays,
-                )
-            )
+class Schedule:
+    """Container of courses with their modules"""
+
+    def __init__(self):
+        self.modules: Set[Module] = set()
+        self.courses: Set[str] = set()
+        self._events: Set[Event] = set()
+
+    @classmethod
+    def get_courses(cls, ncr_list: Iterable) -> Schedule:
+
+        new_schedule = cls()
+        results = get_specific_courses(ncr_list)
+        for result in (r[0] for r in results if r):
+            # Agrega el nombre del curso al set de nombre
+            new_schedule.courses.add(result["name"])
+            for module in result["modules"]:
+                # Agrega el módulo al set de módulos
+                (day, mod), type_, classroom = itemgetter("mod", "type_", "classroom")(module)
+                new_schedule.modules.add(Module(day, mod, type_, classroom, result))
+        return new_schedule
+
+    def display(self, show_color: bool = False) -> str:
+        """Shows the module in a string table-like format"""
+        # Cada mod esta compuesto por listas de listas, de modo que cada lista
+        # sea de tamaño 6 con los días de la semana.
+        # TODO: redo color for different types of modules
+
+        table = [[[str() for i in range(6)]] for j in range(8)]
 
         day_index = "LMWJVS".index
 
-        ics = [
-            "BEGIN:VCALENDAR",
-            "PRODID:-//benjavicente//uc-nrc-a-ics//CL",
-            "VERSION:2.0",
-            "CALSCALE:GREGORIAN",
-            "X-WR-TIMEZONE:America/Santiago",
-            "BEGIN:VTIMEZONE",
-            "TZID:America/Santiago",
-            "X-LIC-LOCATION:America/Santiago",
-            "BEGIN:STANDARD",
-            "TZOFFSETFROM:-0300",
-            "TZOFFSETTO:-0400",
-            "TZNAME:-04",
-            "DTSTART:19700405T000000",
-            "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU",
-            "END:STANDARD",
-            "BEGIN:DAYLIGHT",
-            "TZOFFSETFROM:-0400",
-            "TZOFFSETTO:-0300",
-            "TZNAME:-03",
-            "DTSTART:19700906T000000",
-            "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=1SU",
-            "END:DAYLIGHT",
-            "END:VTIMEZONE",
-        ]
+        for module in self.modules:
+            i_day = day_index(module.day)
+            i_mod = int(module.mod) - 1
 
-        for (day, mod), modules in self.schedule.items():
-            for module_info in modules:
-                start = first_monday.shift(weekday=day_index(day)).replace(**start_time[mod])
-                end = start.shift(**mod_length)
-                ics.extend(
-                    [
-                        "BEGIN:VEVENT",
-                        f"DTSTART;TZID=America/Santiago:{start.format(ics_time_format)}",
-                        f"DTEND;TZID=America/Santiago:{end.format(ics_time_format)}",
-                        (
-                            "RRULE:FREQ=WEEKLY;"
-                            f"WKST=MO;UNTIL={final_day.to('utc').format(ics_time_format)}Z;"
-                            f"BYDAY={start.format('ddd').upper()[:2]}"
-                        ),
-                        *remove_holidays(start),
-                        f"DTSTAMP:{arrow.get().format(ics_time_format)}",
-                        f"UID:{str(uuid4())}",
-                        f"DESCRIPTION:{str_scape(module_info.description)}",
-                        f"SUMMARY:{str_scape(module_info.name)}",
-                        "END:VEVENT",
-                    ]
-                )
-        ics.append("END:VCALENDAR")
-        return "\n".join(ics)
+            # Ve si hay un espacio en las filas existentes
+            has_space = False
+            for row in table[i_mod]:
+                if not row[i_day]:
+                    # Se agrega el evento en el espacio
+                    row[i_day] = module.code
+                    has_space = True
+                    break
+
+            # Si no existe se agrega una fila
+            if not has_space:
+                table[i_mod].append([str() for i in range(6)])
+                table[i_mod][-1][i_mod] = module.code
+
+        # Se hace el str de la tabla
+        output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
+        for mod_number, mod_group in enumerate(table):
+            for i, row in enumerate(mod_group):
+                output += "  ║" if i else f"{mod_number + 1} ║"
+                output += "│".join(map(lambda r: r.center(11), row))
+                output += "\n" if mod_number != len(table) - 1 else ""
+        return output
+
+
+    def _modules_to_events(self):
+        """Takes the set of modules and creates a list of events"""
+        self._events = list()
+        day_events = list()
+        # Primero se crean los eventos de cada día, expandiendolos si es posible
+        for d in "LMWJVS":
+            events_in_the_day = list()
+
+            for m in map(str, range(1, 9)):
+                # Obtiene los módulos en el día y mod correspondiente
+                modules = filter(lambda x: attrgetter("day", "mod")(x) == (d, m), self.modules)
+                for new_event in map(Event.new, modules):
+                    # Revisa si se puede expandir con los otros eventos del día
+                    can_be_expanded = False
+
+                    for other_event in events_in_the_day:
+                        if other_event.is_expandable_to(new_event):
+                            can_be_expanded = True
+                            # Se modifica el evento en el lugar
+                            other_event += new_event
+                            break
+
+                    if not can_be_expanded:
+                        events_in_the_day.append(new_event)
+
+            day_events.append(events_in_the_day)
+
+        # Luego se ve si algún evento de un día puede expandirse a otro
+        # TODO: ver si se está iterando correctamente y cambiar los nombres (testing)
+        for day1, list1 in enumerate(day_events):
+            for day2 in range(day1 + 1, len(day_events) - 1):
+                for event1 in list1:
+                    for event2 in day_events[day2]:
+                        if event1.is_expandable_to(event2):
+                            event1 += event2
+                            day_events[day2].remove(event2)
+                            break
+            # Una vez terminado el día se agregan los eventos a la lista principal
+            self._events.extend(list1)
+
+    def to_ics(self) -> str:
+        """Returns the representation of the object in the iCalendar format"""
+        self._modules_to_events()
+        mapping = {"events": "\n".join(map(Event.to_ics, self._events))}
+        return CALENDAR_TEMPLETE.substitute(mapping)
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+    RESULT = Schedule.get_courses(["11349"])
+    pprint(RESULT.courses)
+    print(RESULT.display())
+    print(RESULT.to_ics())
