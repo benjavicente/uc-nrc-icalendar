@@ -38,7 +38,7 @@ while True:
         print("Cursos importados:", *RESULTS.courses, sep="\n", end="\n" * 2)
 
         print("Cargar el siguiente calendario?")
-        print(calendar.display())
+        print(RESULTS.display())
 
         opt = input("Y/N -> ").strip().lower()
 
