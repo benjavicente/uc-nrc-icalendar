@@ -56,19 +56,19 @@ class Module:
     _metadata: dict
 
     @property
-    def code(self):
+    def code(self) -> str:
         """Code of the course"""
         return "-".join(itemgetter("code", "section")(self._metadata))
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Name of the module"""
         if self.type_ == "CLAS":
             return self._metadata["name"]
         return " ".join((self.type_, self._metadata["name"]))
 
     @property
-    def description(self):
+    def description(self) -> str:
         """Description of the module"""
         return "\n".join(
             (self.code, ", ".join(self._metadata["teachers"]), self._metadata["campus"])
@@ -91,10 +91,10 @@ class Event:
         main_module: module where the VEvent will get the metadata.
         modules: a set of modules that makes the VEvent.
         """
-        self._modules = modules
-        self.__main_module = main_module
-        self.days = {main_module.day}
-        self.mods = {main_module.mod}
+        self._modules: Set[Module] = modules
+        self.__main_module: Module = main_module
+        self.days: Set[str] = {main_module.day}
+        self.mods: Set[str] = {main_module.mod}
 
     # TODO: mejor manera de acceder a code, type_, name & description
     @property
@@ -165,13 +165,12 @@ class Event:
         start = base_day.replace(**MODULE_START_TIME[first_module])
         end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
 
-        last = LAST_DAY
-        days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in self.days if d in BC_TO_ICS_DAY_NAMES))
+        days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in self.days))
 
         mapping = {
             "start": start.format(ICS_ARROW_DATETIME_FORMAT),
             "end": end.format(ICS_ARROW_DATETIME_FORMAT),
-            "last": last.format(ICS_ARROW_DATETIME_FORMAT),
+            "last": LAST_DAY.format(ICS_ARROW_DATETIME_FORMAT),
             "days": days,
             "ex_dates": get_ex_dates(start),
             "now": arrow.get().format(ICS_ARROW_DATETIME_FORMAT),
@@ -186,9 +185,9 @@ class Schedule:
     """Container of courses with their modules"""
 
     def __init__(self):
-        self.modules = set()
-        self.courses = set()
-        self._events = None
+        self.modules: Set[Module] = set()
+        self.courses: Set[str] = set()
+        self._events: Set[Event] = set()
 
     @classmethod
     def get_courses(cls, ncr_list: Iterable) -> Schedule:
@@ -206,15 +205,47 @@ class Schedule:
 
     def display(self, show_color: bool = False) -> str:
         """Shows the module in a string table-like format"""
-        # TODO
-        pass
+        # Cada mod esta compuesto por listas de listas, de modo que cada lista
+        # sea de tamaño 6 con los días de la semana.
+        # TODO: redo color for different types of modules
+
+        table = [[[str() for i in range(6)]] for j in range(8)]
+
+        day_index = "LMWJVS".index
+
+        for module in self.modules:
+            i_day = day_index(module.day)
+            i_mod = int(module.mod) - 1
+
+            # Ve si hay un espacio en las filas existentes
+            has_space = False
+            for row in table[i_mod]:
+                if not row[i_day]:
+                    # Se agrega el evento en el espacio
+                    row[i_day] = module.code
+                    has_space = True
+                    break
+
+            # Si no existe se agrega una fila
+            if not has_space:
+                table[i_mod].append([str() for i in range(6)])
+                table[i_mod][-1][i_mod] = module.code
+
+        # Se hace el str de la tabla
+        output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
+        for mod_number, mod_group in enumerate(table):
+            for i, row in enumerate(mod_group):
+                output += "  ║" if i else f"{mod_number + 1} ║"
+                output += "│".join(map(lambda r: r.center(11), row)) + "\n"
+        return output
+
 
     def _modules_to_events(self):
         """Takes the set of modules and creates a list of events"""
         self._events = list()
         day_events = list()
         # Primero se crean los eventos de cada día, expandiendolos si es posible
-        for d in "LMWJV":
+        for d in "LMWJVS":
             events_in_the_day = list()
 
             for m in map(str, range(1, 9)):
@@ -260,4 +291,4 @@ if __name__ == "__main__":
     from pprint import pprint
     RESULT = Schedule.get_courses(["11349", "20803", "16183", "12481"])
     pprint(RESULT.courses)
-    print(RESULT.to_ics())
+    print(RESULT.display())

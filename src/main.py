@@ -3,8 +3,8 @@
 from os import path, makedirs, getcwd
 from schedule import Schedule
 
-out_direcory = "output"
-out_file = "calendario.ics"
+OUT_DIRECORY = "output"
+OUT_FILE = "calendario.ics"
 
 
 
@@ -38,13 +38,13 @@ while True:
         print("Cursos importados:", *RESULTS.courses, sep="\n", end="\n" * 2)
 
         print("Cargar el siguiente calendario?")
-        # print(calendar)
+        print(calendar.display())
 
         opt = input("Y/N -> ").strip().lower()
 
         if opt == "y":
-            makedirs(out_direcory, exist_ok=True)
-            with open(path.join(out_direcory, out_file), "w", encoding="utf-8") as file:
+            makedirs(OUT_DIRECORY, exist_ok=True)
+            with open(path.join(OUT_DIRECORY, OUT_FILE), "w", encoding="utf-8") as file:
                 file.write(RESULTS.to_ics())
-            print("Calendario gurdado en", path.join(out_direcory, out_file))
-            print(path.join(getcwd(), out_direcory, out_file))
+            print("Calendario gurdado en", path.join(OUT_DIRECORY, OUT_FILE))
+            print(path.join(getcwd(), OUT_DIRECORY, OUT_FILE))
