@@ -236,7 +236,8 @@ class Schedule:
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
                 output += "  ║" if i else f"{mod_number + 1} ║"
-                output += "│".join(map(lambda r: r.center(11), row)) + "\n"
+                output += "│".join(map(lambda r: r.center(11), row))
+                output += "\n" if mod_number != len(table) - 1 else ""
         return output
 
 
@@ -270,7 +271,7 @@ class Schedule:
         # Luego se ve si algún evento de un día puede expandirse a otro
         # TODO: ver si se está iterando correctamente y cambiar los nombres (testing)
         for day1, list1 in enumerate(day_events):
-            for day2 in range(len(day_events) - 1 - day1):
+            for day2 in range(day1 + 1, len(day_events) - 1):
                 for event1 in list1:
                     for event2 in day_events[day2]:
                         if event1.is_expandable_to(event2):
@@ -289,6 +290,7 @@ class Schedule:
 
 if __name__ == "__main__":
     from pprint import pprint
-    RESULT = Schedule.get_courses(["11349", "20803", "16183", "12481"])
+    RESULT = Schedule.get_courses(["11349"])
     pprint(RESULT.courses)
     print(RESULT.display())
+    print(RESULT.to_ics())
