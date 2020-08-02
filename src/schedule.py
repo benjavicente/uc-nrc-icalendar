@@ -23,6 +23,7 @@ from constants import (
     MODULE_START_TIME,
     MODULE_LENGTH,
 )
+
 from scraper import get_specific_courses
 
 
@@ -32,7 +33,8 @@ def scape_str(string: str) -> str:
 
 
 def get_ex_dates(start: arrow.Arrow) -> str:
-    """Get a str with EXDATES of the iCalendar"""
+    """Get a str with ExDates of the iCalendar"""
+    # TODO: retornar solo los feriados que estén en el mismo día de la semana
     return "\n".join(
         map(
             lambda h, s=start: EX_DATE_TEMPLATE.substitute(
@@ -153,15 +155,15 @@ class Event:
         first_module = str(min(map(int, self.mods)))
         last_module = str(max(map(int, self.mods)))
 
-        # TODO: funciona para todo el calendario excepto a la primera semana
-        # TODO: debido a que todos los eventos parten en el primer día de clases
-        # TODO: esto se puede solucionar creando un día base en el primer día
-        # TODO: que realmente hay clases en ese evento, remplazando `FIRST DAY`
+        # pylint: disable=undefined-loop-variable
+        for day_number, day_letter in enumerate(BC_TO_ICS_DAY_NAMES.keys()):
+            if day_letter in self.days:
+                break
 
-        # base_day = FIRST_DAY.shift(weekday=BC_TO_ICS_DAY_NAMES.keys().index())
+        base_day = FIRST_DAY.shift(weekday=day_number)
 
-        start = FIRST_DAY.replace(**MODULE_START_TIME[first_module])
-        end = FIRST_DAY.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
+        start = base_day.replace(**MODULE_START_TIME[first_module])
+        end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
 
         last = LAST_DAY
         days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in self.days if d in BC_TO_ICS_DAY_NAMES))
