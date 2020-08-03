@@ -203,14 +203,9 @@ class Schedule:
                 new_schedule.modules.add(Module(day, mod, type_, classroom, result))
         return new_schedule
 
-    def display(self, show_color: bool = False) -> str:
-        """Shows the module in a string table-like format"""
-        # Cada mod esta compuesto por listas de listas, de modo que cada lista
-        # sea de tamaño 6 con los días de la semana.
-        # TODO: redo color for different types of modules
-
+    def get_table(self) -> list:
+        """Gets the table representing the modules in the schedule"""
         table = [[[str() for i in range(6)]] for j in range(8)]
-
         day_index = "LMWJVS".index
 
         for module in self.modules:
@@ -231,6 +226,12 @@ class Schedule:
                 table[i_mod].append([str() for i in range(6)])
                 table[i_mod][-1][i_mod] = module.code
 
+        return table
+
+    def display(self, show_color: bool = False) -> str:
+        """Shows the module in a string table-like format"""
+        # TODO: color
+        table = self.get_table()
         # Se hace el str de la tabla
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
