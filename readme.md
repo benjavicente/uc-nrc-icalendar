@@ -32,15 +32,15 @@ cd uc-nrc-icalendar
 En windows
 
 ```cmd
-py -m venv .
-Scripts\activate
+py -m venv env
+env\Scripts\activate
 ```
 
 En macOS y Linux
 
 ```bash
-python3 -m venv .
-bin/activate
+python3 -m venv env
+env/bin/activate
 ```
 
 ### Descarga de módulos

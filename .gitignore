@@ -13,5 +13,13 @@ __pycache__/
 test*.py
 editable_icon.svg
 
+# Enviroment
+env/
+
 # Output
 output/
+
+# Build
+dist/
+*.cmd
+*.exe
