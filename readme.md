@@ -52,13 +52,9 @@ pip install -r requirements.txt
 
 ### Uso
 
-```cmd
-cd src
-```
+Para mostrar el interfaz de la consola: `src/main.py`
 
-Para mostrar el interfaz de la consola: `main.py`
-
-Para mostrar el GUI: `gui.py`
+Para mostrar el GUI: `src/gui.py`
 
 
 
