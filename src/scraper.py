@@ -86,6 +86,8 @@ def _clean_courses_row(row) -> dict:
             for mod_row in data.find_all("tr"):
                 mod, type_, classroom = map(lambda r: r.text.strip(), mod_row.find_all("td"))
                 days, hours = mod.split(":")
+                if not days or not hours:
+                    continue
                 days = days.split("-")
                 hours = hours.split(",")
                 modules += [
@@ -125,7 +127,7 @@ def get_specific_courses(nrc_codes: Iterable) -> list:
 
 # Example
 if __name__ == "__main__":
-    RESULT = get_courses(code="IIC")
+    RESULT = get_courses(nrc="16312"), get_courses(nrc="20803")
     try:
         from pprint import pprint
     except ImportError:
