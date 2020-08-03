@@ -6,6 +6,8 @@ from collections import OrderedDict
 import arrow
 
 
+# iCalendar
+
 FIRST_DAY = arrow.get(2020, 8, 10)
 
 LAST_DAY = arrow.get(2020, 12, 4).shift(days=1)

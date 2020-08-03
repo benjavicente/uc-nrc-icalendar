@@ -205,7 +205,7 @@ class Schedule:
 
     def get_table(self) -> list:
         """Gets the table representing the modules in the schedule"""
-        table = [[[str() for i in range(6)]] for j in range(8)]
+        table = [[[None for i in range(6)]] for j in range(8)]
         day_index = "LMWJVS".index
 
         for module in self.modules:
@@ -217,14 +217,15 @@ class Schedule:
             for row in table[i_mod]:
                 if not row[i_day]:
                     # Se agrega el evento en el espacio
-                    row[i_day] = module.code
+                    # TODO: se debé agregar un objeto módulo en vez de el código
+                    row[i_day] = module
                     has_space = True
                     break
 
             # Si no existe se agrega una fila
             if not has_space:
-                table[i_mod].append([str() for i in range(6)])
-                table[i_mod][-1][i_mod] = module.code
+                table[i_mod].append([None for i in range(6)])
+                table[i_mod][-1][i_mod] = module
 
         return table
 
@@ -236,8 +237,9 @@ class Schedule:
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
+                str_row = map(lambda r: r.code if r else str(), row)
                 output += "  ║" if i else f"{mod_number + 1} ║"
-                output += "│".join(map(lambda r: r.center(11), row))
+                output += "│".join(map(lambda r: r.center(11), str_row))
                 output += "\n" if mod_number != len(table) - 1 else ""
         return output
 
