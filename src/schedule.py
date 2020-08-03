@@ -44,6 +44,10 @@ def get_ex_dates(start: arrow.Arrow) -> str:
         )
     )
 
+def valid_nrc(nrc: str) -> bool:
+    """Checks if aa string is a valid ncr"""
+    return len(nrc) == 5 and nrc.isdecimal()
+
 
 @dataclass(frozen=True)
 class Module:
@@ -189,9 +193,12 @@ class Schedule:
         self.courses: Set[str] = set()
         self._events: Set[Event] = set()
 
+    def __bool__(self):
+        return bool(self.modules)
+
     @classmethod
     def get_courses(cls, ncr_list: Iterable) -> Schedule:
-
+        """Get a new instance of Schedule with the given courses"""
         new_schedule = cls()
         results = get_specific_courses(ncr_list)
         for result in (r[0] for r in results if r):

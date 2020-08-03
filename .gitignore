@@ -11,7 +11,7 @@ __pycache__/
 # Workspace
 .vscode/
 test*.py
-
+editable_icon.svg
 
 # Output
 output/

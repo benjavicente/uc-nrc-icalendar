@@ -1,16 +1,10 @@
 """NRC a ics"""
 
 from os import path, makedirs, getcwd
-from schedule import Schedule
+from schedule import Schedule, valid_nrc
 
 OUT_DIRECORY = "output"
 OUT_FILE = "calendario.ics"
-
-
-
-def valid_nrc(nrc: str) -> bool:
-    """Retorna si el nrc es válido"""
-    return len(nrc) == 5 and nrc.isdecimal()
 
 
 print(
