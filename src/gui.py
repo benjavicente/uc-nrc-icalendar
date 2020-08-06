@@ -43,13 +43,16 @@ style = R"""
 
 
 class ScheduleView(QTableWidget):
-    """Table view of the schedule"""
+    """Table view of the schedule"""    
 
     def __init__(self, rows: int, columns: int, parent: QWidget):
         super().__init__(rows, columns, parent)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.setSelectionMode(QTableWidget.NoSelection)
+        self.setFocusPolicy(Qt.NoFocus)
 
     def update_size(self):
         """Updates the size of the widget"""
