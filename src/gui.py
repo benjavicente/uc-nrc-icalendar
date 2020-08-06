@@ -1,9 +1,10 @@
 """Simple GUI application for using Schedule.py"""
 
-# Nota: El módulo debe´ria funcionar también con PyQt
+# Nota: El módulo debería funcionar también con PyQt
 
 
 import sys
+from os import path
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QIcon
@@ -72,7 +73,7 @@ class MainWindow(QWidget):
         self.setFixedSize(500, 360)
         self.setStyleSheet(style)
         self.setWindowTitle("NRC a iCalendar")
-        self.setWindowIcon(QIcon("icon.svg"))
+        self.setWindowIcon(QIcon(path.join("assets", "icon.svg")))
 
         # Dialogo para guradar el archivo
         self.save_dialog = QFileDialog(self)

@@ -21,5 +21,6 @@ output/
 
 # Build
 dist/
+build/
 *.cmd
 *.exe
