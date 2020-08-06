@@ -45,6 +45,10 @@ def get_ex_dates(start: arrow.Arrow) -> str:
         )
     )
 
+def valid_nrc(nrc: str) -> bool:
+    """Checks if aa string is a valid ncr"""
+    return len(nrc) == 5 and nrc.isdecimal()
+
 
 Exam = namedtuple("Exam", ("name", "date"))
 Event = namedtuple("Event", ("days", "mods", "type_", "classroom"))
