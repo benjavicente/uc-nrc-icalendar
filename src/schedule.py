@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from operator import attrgetter, itemgetter
-from typing import Iterable, Set
+from typing import Iterable
 from uuid import uuid4
+from collections import namedtuple
 
 import arrow
 
@@ -13,6 +13,7 @@ from constants import (
     CALENDAR_TEMPLETE,
     BC_TO_ICS_DAY_NAMES,
     EVENT_TEMPLETE,
+    DAY_EVENT_TEMPLATE,
     FIRST_DAY,
     ICS_ARROW_DATETIME_FORMAT,
     ICS_ARROW_TIME_FORMAT,
@@ -24,7 +25,7 @@ from constants import (
     MODULE_LENGTH,
 )
 
-from scraper import get_specific_courses
+from scraper import get_specific_courses, get_exams
 
 
 def scape_str(string: str) -> str:
@@ -44,195 +45,165 @@ def get_ex_dates(start: arrow.Arrow) -> str:
         )
     )
 
-def valid_nrc(nrc: str) -> bool:
-    """Checks if aa string is a valid ncr"""
-    return len(nrc) == 5 and nrc.isdecimal()
+
+Exam = namedtuple("Exam", ("name", "date"))
+Event = namedtuple("Event", ("days", "mods", "type_", "classroom"))
 
 
-@dataclass(frozen=True)
-class Module:
-    """Module of a course"""
+class Course:
+    """Course"""
 
-    day: str
-    mod: str
-    type_: str
-    classroom: str
-    _metadata: dict
-
-    @property
-    def code(self) -> str:
-        """Code of the course"""
-        return "-".join(itemgetter("code", "section")(self._metadata))
-
-    @property
-    def name(self) -> str:
-        """Name of the module"""
-        if self.type_ == "CLAS":
-            return self._metadata["name"]
-        return " ".join((self.type_, self._metadata["name"]))
-
-    @property
-    def description(self) -> str:
-        """Description of the module"""
-        return "\n".join(
-            (self.code, ", ".join(self._metadata["teachers"]), self._metadata["campus"])
-        )
+    def __init__(self, data: dict):
+        self.data = data
+        self.exams = list()
 
     def __hash__(self):
-        return hash((self.day, self.mod, self.type_, self.classroom))
+        return hash(self.data["ncr"])
 
     def __repr__(self):
-        return f"<{type(self).__name__}({self.day}{self.mod}:{self.code})>"
-
-
-class Event:
-    """Group of modules that makes one VEvent.
-    Modules must have the same type and code.
-    """
-
-    def __init__(self, main_module: Module, modules: Set[Module]):
-        """
-        main_module: module where the VEvent will get the metadata.
-        modules: a set of modules that makes the VEvent.
-        """
-        self._modules: Set[Module] = modules
-        self.__main_module: Module = main_module
-        self.days: Set[str] = {main_module.day}
-        self.mods: Set[str] = {main_module.mod}
-
-    # TODO: mejor manera de acceder a code, type_, name & description
-    @property
-    def code(self):
-        return self.__main_module.code
+        return f"{type(self).__name__}({self.code_section})"
 
     @property
-    def type_(self):
-        return self.__main_module.type_
-
-    @property
-    def name(self):
-        return self.__main_module.name
+    def code_section(self):
+        return "-".join((self.data["code"], self.data["section"]))
 
     @property
     def description(self):
-        return self.__main_module.description
+        return "\n".join((self.data["code"], ", ".join(self.data["teachers"]), self.data["campus"]))
 
-    @classmethod
-    def new(cls, module: Module) -> Event:
-        """Makes a new event form one module"""
-        return cls(module, {module})
+    def to_ics(self):
+        """Tranforms the Course to the iCalendar format"""
+        # TODO: esto se puede mejorar considerablemente
+        # TODO: ordenar variables
+        ics = list()
 
-    def __repr__(self):
-        join = "".join
-        return f"<{type(self).__name__}({join(self.days)}{join(self.mods)}:{self.code})>"
+        # Primero se crean los eventos de las clases
 
-    def __iadd__(self, other_event: Event):
-        self._modules |= other_event._modules
-        self.days |= other_event.days
-        self.mods |= other_event.mods
+        # Extentción vertical
+        week_events = list()
+        for day in "LMWJVS":
+            last_event = None
+            events_in_the_day = list()
+            for mod in map(str, range(1, 9)):
+                mathed_modules = [m for m in self.data["modules"] if m["module"] == (day, mod)]
+                for module in mathed_modules:
+                    if last_event:
+                        tp_l = attrgetter("type_", "classroom")(last_event)
+                        tp_m = itemgetter("type_", "classroom")(module)
+                        if tp_l == tp_m:
+                            last_event.mods.append(mod)
+                            continue
+                    last_event = Event([day], [mod], module["type_"], module["classroom"])
+                    events_in_the_day.append(last_event)
+            week_events.append(events_in_the_day)
 
-    def is_expandable_to(self, other_event: Event) -> bool:
-        """Checks if a event can be expanded"""
-        # Example:
-        # A C ~ D
-        # B ~ ~ E
-        # ~ F ~ ~
-        # - A can expand vertically to B if they are the same code and type
-        # - AB can expand horizontally to DE if hey are the same code and type
-        # - AC can expand horizontally to D if hey are the same code and type
-        # - AB can't expand to C because columns must have the same size
-        # - C cant expand to F because there is a gap in the column
+        # Extención horizontal
+        events = list()
+        for day1, list1 in enumerate(week_events):
+            for day2 in range(day1 + 1, len(week_events)):
+                for event1 in list1:
+                    for event2 in week_events[day2]:
+                        compare = attrgetter("type_", "classroom")
+                        if compare(event1) == compare(event2):
+                            event1.days.extend(event2.days)
+                            week_events[day2].remove(event2)
+                            break
+            events.extend(list1)
 
-        if self.code != other_event.code or self.type_ != other_event.type_:
-            return False
+        # Se crean los eventos ics de los modulos
+        for event in events:
+            first_module = min(map(int, event.mods))
+            last_module = max(map(int, event.mods))
 
-        # TODO: testing
-        vert = list(map(int, self.mods | other_event.mods))
-        return (
-            all((n in vert for n in range(min(vert), max(vert) + 1)))
-            if self.days == other_event.days
-            else self.mods == other_event.mods
-        )
+            day_number = list(BC_TO_ICS_DAY_NAMES).index(event.days[0])
+            base_day = FIRST_DAY.shift(weekday=day_number)
+            start = base_day.replace(**MODULE_START_TIME[first_module])
+            end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
 
-    def to_ics(self) -> str:
-        """Returns the representation of the object in the iCalendar format"""
-        first_module = str(min(map(int, self.mods)))
-        last_module = str(max(map(int, self.mods)))
+            days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in event.days))
+            name_prefix = "" if event.type_ == "CLAS" else f"{event.type_} "
 
-        # pylint: disable=undefined-loop-variable
-        for day_number, day_letter in enumerate(BC_TO_ICS_DAY_NAMES.keys()):
-            if day_letter in self.days:
-                break
+            mapping = {
+                "start": start.format(ICS_ARROW_DATETIME_FORMAT),
+                "end": end.format(ICS_ARROW_DATETIME_FORMAT),
+                "last": LAST_DAY.format(ICS_ARROW_DATETIME_FORMAT),
+                "days": days,
+                "ex_dates": get_ex_dates(start),
+                "now": arrow.get().format(ICS_ARROW_DATETIME_FORMAT),
+                "uid": uuid4(),
+                "description": scape_str(self.description),
+                "summary": scape_str(name_prefix + self.data["name"]),
+            }
 
-        base_day = FIRST_DAY.shift(weekday=day_number)
+            ics.append(EVENT_TEMPLETE.substitute(mapping))
 
-        start = base_day.replace(**MODULE_START_TIME[first_module])
-        end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
+        # Se crean los eventos de las evaluaciones
 
-        days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in self.days))
+        for exam in self.exams:
+            date = arrow.get(*exam.date)
+            name = " ".join((exam.name, self.data["name"]))
+            mapping = {
+                "day": date.format(ICS_ARROW_DATETIME_FORMAT),
+                "next_day": date.shift(days=1).format(ICS_ARROW_DATETIME_FORMAT),
+                "days": days,
+                "now": arrow.get().format(ICS_ARROW_DATETIME_FORMAT),
+                "uid": uuid4(),
+                "summary": name,
+            }
+            ics.append(DAY_EVENT_TEMPLATE.substitute(mapping))
 
-        mapping = {
-            "start": start.format(ICS_ARROW_DATETIME_FORMAT),
-            "end": end.format(ICS_ARROW_DATETIME_FORMAT),
-            "last": LAST_DAY.format(ICS_ARROW_DATETIME_FORMAT),
-            "days": days,
-            "ex_dates": get_ex_dates(start),
-            "now": arrow.get().format(ICS_ARROW_DATETIME_FORMAT),
-            "uid": uuid4(),
-            "description": scape_str(self.description),
-            "summary": scape_str(self.name),
-        }
-        return EVENT_TEMPLETE.substitute(mapping)
+        return "\n".join(ics)
 
 
 class Schedule:
-    """Container of courses with their modules"""
+    """Schedule of courses"""
 
-    def __init__(self):
-        self.modules: Set[Module] = set()
-        self.courses: Set[str] = set()
-        self._events: Set[Event] = set()
+    def __init__(self, courses: set):
+        self.courses = courses
 
-    def __bool__(self):
-        return bool(self.modules)
+    def __repr__(self):
+        str_courses = ",".join(map(repr, self.courses))
+        return f"{type(self).__name__}({str_courses})"
 
     @classmethod
-    def get_courses(cls, ncr_list: Iterable) -> Schedule:
+    def get(cls, ncr_list: Iterable) -> Schedule:
         """Get a new instance of Schedule with the given courses"""
-        new_schedule = cls()
         results = get_specific_courses(ncr_list)
-        for result in (r[0] for r in results if r):
-            # Agrega el nombre del curso al set de nombre
-            new_schedule.courses.add(result["name"])
-            for module in result["modules"]:
-                # Agrega el módulo al set de módulos
-                (day, mod), type_, classroom = itemgetter("mod", "type_", "classroom")(module)
-                new_schedule.modules.add(Module(day, mod, type_, classroom, result))
-        return new_schedule
+        courses = {Course(r[0]) for r in results if r}
+        exams = get_exams(map(attrgetter("code_section"), courses))
+
+        # Se añaden las evaluaciones a los cursos
+        for exam in exams:
+            for course in courses:
+                if exam["course_code"] == course.data["code"]:
+                    course.exams.append(Exam(exam["name"], exam["date"]))
+
+        return Schedule(courses)
 
     def get_table(self) -> list:
         """Gets the table representing the modules in the schedule"""
         table = [[[None for i in range(6)]] for j in range(8)]
         day_index = "LMWJVS".index
 
-        for module in self.modules:
-            i_day = day_index(module.day)
-            i_mod = int(module.mod) - 1
+        for course in self.courses:
+            for module in course.data["modules"]:
+                day, mod = module["module"]
+                i_day = day_index(day)
+                i_mod = int(mod) - 1
 
-            # Ve si hay un espacio en las filas existentes
-            has_space = False
-            for row in table[i_mod]:
-                if not row[i_day]:
-                    # Se agrega el evento en el espacio
-                    # TODO: se debé agregar un objeto módulo en vez de el código
-                    row[i_day] = module
-                    has_space = True
-                    break
+                # Ve si hay un espacio en las filas existentes
+                has_space = False
+                for row in table[i_mod]:
+                    if not row[i_day]:
+                        # Se agrega el evento en el espacio
+                        row[i_day] = course.code_section
+                        has_space = True
+                        break
 
-            # Si no existe se agrega una fila
-            if not has_space:
-                table[i_mod].append([None for i in range(6)])
-                table[i_mod][-1][i_mod] = module
+                # Si no existe se agrega una fila
+                if not has_space:
+                    table[i_mod].append([None for i in range(6)])
+                    table[i_mod][-1][i_mod] = course.code_section
 
         return table
 
@@ -244,63 +215,19 @@ class Schedule:
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
-                str_row = map(lambda r: r.code if r else str(), row)
+                str_row = map(lambda r: r if r else str(), row)
                 output += "  ║" if i else f"{mod_number + 1} ║"
                 output += "│".join(map(lambda r: r.center(11), str_row))
                 output += "\n" if mod_number != len(table) - 1 else ""
         return output
 
-
-    def _modules_to_events(self):
-        """Takes the set of modules and creates a list of events"""
-        self._events = list()
-        day_events = list()
-        # Primero se crean los eventos de cada día, expandiendolos si es posible
-        for d in "LMWJVS":
-            events_in_the_day = list()
-
-            for m in map(str, range(1, 9)):
-                # Obtiene los módulos en el día y mod correspondiente
-                modules = filter(lambda x: attrgetter("day", "mod")(x) == (d, m), self.modules)
-                for new_event in map(Event.new, modules):
-                    # Revisa si se puede expandir con los otros eventos del día
-                    can_be_expanded = False
-
-                    for other_event in events_in_the_day:
-                        if other_event.is_expandable_to(new_event):
-                            can_be_expanded = True
-                            # Se modifica el evento en el lugar
-                            other_event += new_event
-                            break
-
-                    if not can_be_expanded:
-                        events_in_the_day.append(new_event)
-
-            day_events.append(events_in_the_day)
-
-        # Luego se ve si algún evento de un día puede expandirse a otro
-        # TODO: ver si se está iterando correctamente y cambiar los nombres (testing)
-        for day1, list1 in enumerate(day_events):
-            for day2 in range(day1 + 1, len(day_events) - 1):
-                for event1 in list1:
-                    for event2 in day_events[day2]:
-                        if event1.is_expandable_to(event2):
-                            event1 += event2
-                            day_events[day2].remove(event2)
-                            break
-            # Una vez terminado el día se agregan los eventos a la lista principal
-            self._events.extend(list1)
-
     def to_ics(self) -> str:
         """Returns the representation of the object in the iCalendar format"""
-        self._modules_to_events()
-        mapping = {"events": "\n".join(map(Event.to_ics, self._events))}
+        mapping = {"events": "\n".join([c.to_ics() for c in self.courses])}
         return CALENDAR_TEMPLETE.substitute(mapping)
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-    RESULT = Schedule.get_courses(["11349"])
-    pprint(RESULT.courses)
-    print(RESULT.display())
-    print(RESULT.to_ics())
+    x = Schedule.get(["20803"])
+    # print(x.to_ics())
+    print(x.display(), sep="\n")
