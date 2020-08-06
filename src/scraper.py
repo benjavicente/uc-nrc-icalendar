@@ -2,15 +2,14 @@
 
 import datetime as dt
 import re
-import urllib.request as rq
+import html
 
 from collections import defaultdict
-from html import unescape as html_unescape
 from itertools import product
 from multiprocessing.dummy import Pool as ThreadPool
-from typing import Iterable
+from typing import Iterable, Tuple
 
-
+import requests as rq
 from bs4 import BeautifulSoup
 
 
@@ -37,7 +36,7 @@ COURSES_COLUMNS_NAMES = (
 
 MODULE_COLUMNS_NAMES = (
     "type_",
-    "mod",
+    "module",
     "classroom",
 )
 
@@ -51,10 +50,13 @@ CURRENT_YEAR = TODAY.year
 CURRENT_SEMESTER = TODAY.month // 6 + 1
 
 
-def _get_soup(url: str) -> BeautifulSoup:
-    with rq.urlopen(url) as response:
-        html = html_unescape(response.read().decode("utf-8"))
-    return BeautifulSoup(html, "lxml")  # Hay que instalar lxml!
+def _get_soup(url: str, **kwargs) -> BeautifulSoup:
+    """Gets a BeautifulSoup from the `url`.
+    `kwards` from the Requests API.
+    """
+    with rq.get(url, **kwargs) as response:
+        html_string = html.unescape(response.content.decode("utf-8"))
+    return BeautifulSoup(html_string, "lxml")  # Hay que instalar lxml!
 
 
 def _get_courses_address(**parameters) -> str:
@@ -88,6 +90,8 @@ def _clean_courses_row(row) -> dict:
                 days, hours = mod.split(":")
                 if not days or not hours:
                     continue
+                if classroom == "(Por Asignar)":
+                    classroom = None
                 days = days.split("-")
                 hours = hours.split(",")
                 modules += [
@@ -125,12 +129,61 @@ def get_specific_courses(nrc_codes: Iterable) -> list:
         return pool.map(lambda nrc: get_courses(nrc=nrc), nrc_codes)
 
 
+# EXPERIMENTAL
+
+MONTH_NUMBERS = {
+    "Enero": 1,
+    "Febrero": 2,
+    "Marzo": 3,
+    "Abril": 4,
+    "Mayo": 5,
+    "Junio": 6,
+    "Julio": 7,
+    "Agosto": 8,
+    "Septiembre": 9,
+    "Octubre": 10,
+    "Noviembre": 11,
+    "Diciembre": 12,
+}
+
+
+def get_exams(courses: Iterable["code-section"], semester=CURRENT_SEMESTER, year=CURRENT_YEAR):
+    """Get the tests from multiple courses"""
+    # TODO: cleanup
+    cookies = {f"cursosuc-{year}-{semester}": "%2C".join(courses)}
+    soup = _get_soup("http://buscacursos.uc.cl/calendarioPruebas.ajax.php", cookies=cookies)
+
+    test_list = list()
+
+    for month_table in soup.find_all("table"):
+        month_name, year = month_table.find("th").text.strip().split()
+        for month_row in month_table.find_all("tr"):
+            for day_cell in month_row.find_all("td"):
+
+                cell_content = day_cell.find_all("div")
+
+                if not cell_content:
+                    continue
+
+                day = cell_content[0].text.strip()
+                tests = cell_content[1:]
+
+                if not tests:
+                    continue
+
+                month = MONTH_NUMBERS[month_name]
+
+                for test in tests:
+                    name, course = test.text.split(" \xa0")
+                    test_list.append({
+                        "name": name,
+                        "course_code": course,
+                        "date": (int(year), int(month), int(day))
+                    })
+    return test_list
+
 # Example
 if __name__ == "__main__":
     RESULT = get_courses(nrc="16312"), get_courses(nrc="20803")
-    try:
-        from pprint import pprint
-    except ImportError:
-        print(RESULT)
-    else:
-        pprint(RESULT)
+    from pprint import pprint
+    pprint(RESULT)
