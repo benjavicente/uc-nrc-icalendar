@@ -127,7 +127,7 @@ class MainWindow(QWidget):
             return
 
         try:
-            self.schedule_object = Schedule.get_courses(valid_codes)
+            self.schedule_object = Schedule.get(valid_codes)
         except OSError:
             error_box = QMessageBox(
                 QMessageBox.Critical, "Error", "No se ha podido importar el horario"

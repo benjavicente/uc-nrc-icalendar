@@ -52,6 +52,7 @@ def valid_nrc(nrc: str) -> bool:
 
 Exam = namedtuple("Exam", ("name", "date"))
 Event = namedtuple("Event", ("days", "mods", "type_", "classroom"))
+Module = namedtuple("Module", ("code", "type_"))
 
 
 class Course:
@@ -200,14 +201,14 @@ class Schedule:
                 for row in table[i_mod]:
                     if not row[i_day]:
                         # Se agrega el evento en el espacio
-                        row[i_day] = course.code_section
+                        row[i_day] = Module(course.code_section, module["type_"])
                         has_space = True
                         break
 
                 # Si no existe se agrega una fila
                 if not has_space:
                     table[i_mod].append([None for i in range(6)])
-                    table[i_mod][-1][i_mod] = course.code_section
+                    table[i_mod][-1][i_mod] = Module(course.code_section, module["type_"])
 
         return table
 
@@ -219,7 +220,7 @@ class Schedule:
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
-                str_row = map(lambda r: r if r else str(), row)
+                str_row = map(lambda r: r.code if r else str(), row)
                 output += "  ║" if i else f"{mod_number + 1} ║"
                 output += "│".join(map(lambda r: r.center(11), str_row))
                 output += "\n" if mod_number != len(table) - 1 else ""
