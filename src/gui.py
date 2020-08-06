@@ -1,9 +1,10 @@
 """Simple GUI application for using Schedule.py"""
 
-# Nota: El módulo debe´ria funcionar también con PyQt
+# Nota: El módulo debería funcionar también con PyQt
 
 
 import sys
+from os import path
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QIcon
@@ -42,13 +43,16 @@ style = R"""
 
 
 class ScheduleView(QTableWidget):
-    """Table view of the schedule"""
+    """Table view of the schedule"""    
 
     def __init__(self, rows: int, columns: int, parent: QWidget):
         super().__init__(rows, columns, parent)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.setSelectionMode(QTableWidget.NoSelection)
+        self.setFocusPolicy(Qt.NoFocus)
 
     def update_size(self):
         """Updates the size of the widget"""
@@ -72,7 +76,7 @@ class MainWindow(QWidget):
         self.setFixedSize(500, 360)
         self.setStyleSheet(style)
         self.setWindowTitle("NRC a iCalendar")
-        self.setWindowIcon(QIcon("icon.svg"))
+        self.setWindowIcon(QIcon(path.join("assets", "icon.svg")))
 
         # Dialogo para guradar el archivo
         self.save_dialog = QFileDialog(self)
@@ -126,7 +130,7 @@ class MainWindow(QWidget):
             return
 
         try:
-            self.schedule_object = Schedule.get_courses(valid_codes)
+            self.schedule_object = Schedule.get(valid_codes)
         except OSError:
             error_box = QMessageBox(
                 QMessageBox.Critical, "Error", "No se ha podido importar el horario"

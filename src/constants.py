@@ -15,14 +15,14 @@ LAST_DAY = arrow.get(2020, 12, 4).shift(days=1)
 MODULE_LENGTH = {"hours": 1, "minutes": 20}
 
 MODULE_START_TIME = {
-    "1": {"hour": 8, "minute": 30},
-    "2": {"hour": 10, "minute": 00},
-    "3": {"hour": 11, "minute": 30},
-    "4": {"hour": 14, "minute": 00},
-    "5": {"hour": 15, "minute": 30},
-    "6": {"hour": 17, "minute": 00},
-    "7": {"hour": 18, "minute": 30},
-    "8": {"hour": 20, "minute": 00},
+    1: {"hour": 8, "minute": 30},
+    2: {"hour": 10, "minute": 00},
+    3: {"hour": 11, "minute": 30},
+    4: {"hour": 14, "minute": 00},
+    5: {"hour": 15, "minute": 30},
+    6: {"hour": 17, "minute": 00},
+    7: {"hour": 18, "minute": 30},
+    8: {"hour": 20, "minute": 00},
 }
 
 HOLIDAYS = (
@@ -88,6 +88,20 @@ EVENT_TEMPLETE = Template(
             "DTSTAMP:${now}",
             "UID:${uid}",
             "DESCRIPTION:${description}",
+            "SUMMARY:${summary}",
+            "END:VEVENT",
+        )
+    )
+)
+
+DAY_EVENT_TEMPLATE = Template(
+    "\n".join(
+        (
+            "BEGIN:VEVENT",
+            "DTSTART;TZID=America/Santiago:${day}",
+            "DTEND;TZID=America/Santiago:${next_day}",
+            "DTSTAMP:${now}",
+            "UID:${uid}",
             "SUMMARY:${summary}",
             "END:VEVENT",
         )
