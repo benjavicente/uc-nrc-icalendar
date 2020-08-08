@@ -3,14 +3,13 @@
 # Nota: El módulo debería funcionar también con PyQt
 
 
+import os
 import sys
-from os import path
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import (
     QApplication,
-    QBoxLayout,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -20,9 +19,7 @@ from PySide2.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
-    QSizePolicy,
     QTableWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -30,29 +27,35 @@ from PySide2.QtWidgets import (
 from schedule import Schedule, valid_nrc
 
 
-style = R"""
-.QLabel#CLAS{background: #FBC575}
-.QLabel#AYU{background: #99CC99}
-.QLabel#LAB{background: #B3D4F5}
-.QLabel#TER{background: #FFCCFF}
-.QLabel#TAL{background: #C7C2F8}
-.QLabel#PRA{background: #CCCC99}
-.QLabel#TES{background: #B2EFEF}
-.QLabel#OTR{background: #FF9999}
-"""
+def get_path(*path):
+    """Gets the path of the file, from a executable or python environment"""
+    return os.path.join(getattr(sys, "_MEIPASS", os.getcwd()), *path)
+
+
+with open(get_path("assets", "gui_style.css"), mode="r", encoding="utf-8") as file:
+    WINDOW_STYLE = file.read()
 
 
 class ScheduleView(QTableWidget):
-    """Table view of the schedule"""    
+    """Table view of the schedule"""
 
     def __init__(self, rows: int, columns: int, parent: QWidget):
         super().__init__(rows, columns, parent)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setEditTriggers(QTableWidget.NoEditTriggers)
         self.setSelectionMode(QTableWidget.NoSelection)
         self.setFocusPolicy(Qt.NoFocus)
+
+        horizontal_header = self.horizontalHeader()
+        vertical_header = self.verticalHeader()
+
+        horizontal_header.setSectionResizeMode(QHeaderView.Stretch)
+        vertical_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        self.setHorizontalHeaderLabels("LMWJVS")
+        self.setVerticalHeaderLabels(
+            ["08:30", "10:00", "11:30", "14:00", "15:30", "17:00", "18:30", "20:00"]
+        )
 
     def update_size(self):
         """Updates the size of the widget"""
@@ -73,10 +76,9 @@ class MainWindow(QWidget):
         super().__init__()
         self.schedule_object = None
         self.init_ui()
-        self.setFixedSize(500, 360)
-        self.setStyleSheet(style)
+        self.setStyleSheet(WINDOW_STYLE)
         self.setWindowTitle("NRC a iCalendar")
-        self.setWindowIcon(QIcon(path.join("assets", "icon.svg")))
+        self.setWindowIcon(QIcon(get_path("assets", "icon.svg")))
 
         # Dialogo para guradar el archivo
         self.save_dialog = QFileDialog(self)
@@ -106,6 +108,7 @@ class MainWindow(QWidget):
 
         self.get_button = QPushButton("Obtener horario", self)
         self.get_button.clicked.connect(self.get_schedule)
+        self.get_button.setCursor(Qt.PointingHandCursor)
         main_layout.addWidget(self.get_button)
 
         self.schedule_view = ScheduleView(8, 6, self)
@@ -113,6 +116,7 @@ class MainWindow(QWidget):
 
         self.save_button = QPushButton("Guardar horario", self)
         self.save_button.clicked.connect(self.save_schedule)
+        self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.setDisabled(True)
         main_layout.addWidget(self.save_button)
 
