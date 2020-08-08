@@ -1,0 +1,56 @@
+.MainWindow {
+  background: #fff;
+  max-height: 450;
+  max-width: 700;
+}
+
+.QPushButton {
+  font-size: 14px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #3d6cca;
+  color: #fff;
+  border: 0;
+  padding: 5px;
+}
+
+.QPushButton:hover {
+  background: #4275db;
+}
+
+.QPushButton:disabled {
+  color: #000000;
+  background: #9eabc5;
+}
+
+.QLineEdit {
+  font-size: 12px;
+}
+
+.QLabel {
+  font-size: 12px;
+}
+
+.QLabel#CLAS {
+  background: #fbc575;
+}
+.QLabel#AYU {
+  background: #99cc99;
+}
+.QLabel#LAB {
+  background: #b3d4f5;
+}
+.QLabel#TER {
+  background: #ffccff;
+}
+.QLabel#TAL {
+  background: #c7c2f8;
+}
+.QLabel#PRA {
+  background: #cccc99;
+}
+.QLabel#TES {
+  background: #b2efef;
+}
+.QLabel#OTR {
+  background: #ff9999;
+}

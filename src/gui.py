@@ -3,14 +3,14 @@
 # Nota: El módulo debería funcionar también con PyQt
 
 
+import os
 import sys
-from os import path
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QIcon
+from PySide2.QtGui import QIcon, QIntValidator
 from PySide2.QtWidgets import (
     QApplication,
-    QBoxLayout,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -18,11 +18,11 @@ from PySide2.QtWidgets import (
     QLabel,
     QLayout,
     QLineEdit,
+    QMainWindow,
     QMessageBox,
     QPushButton,
-    QSizePolicy,
+    QStatusBar,
     QTableWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -30,29 +30,35 @@ from PySide2.QtWidgets import (
 from schedule import Schedule, valid_nrc
 
 
-style = R"""
-.QLabel#CLAS{background: #FBC575}
-.QLabel#AYU{background: #99CC99}
-.QLabel#LAB{background: #B3D4F5}
-.QLabel#TER{background: #FFCCFF}
-.QLabel#TAL{background: #C7C2F8}
-.QLabel#PRA{background: #CCCC99}
-.QLabel#TES{background: #B2EFEF}
-.QLabel#OTR{background: #FF9999}
-"""
+def get_path(*path):
+    """Gets the path of the file, from a executable or python environment"""
+    return os.path.join(getattr(sys, "_MEIPASS", os.getcwd()), *path)
+
+
+with open(get_path("assets", "gui_style.css"), mode="r", encoding="utf-8") as file:
+    WINDOW_STYLE = file.read()
 
 
 class ScheduleView(QTableWidget):
-    """Table view of the schedule"""    
+    """Table view of the schedule"""
 
     def __init__(self, rows: int, columns: int, parent: QWidget):
         super().__init__(rows, columns, parent)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setEditTriggers(QTableWidget.NoEditTriggers)
         self.setSelectionMode(QTableWidget.NoSelection)
         self.setFocusPolicy(Qt.NoFocus)
+
+        horizontal_header = self.horizontalHeader()
+        vertical_header = self.verticalHeader()
+
+        horizontal_header.setSectionResizeMode(QHeaderView.Stretch)
+        vertical_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        self.setHorizontalHeaderLabels("LMWJVS")
+        self.setVerticalHeaderLabels(
+            ["08:30", "10:00", "11:30", "14:00", "15:30", "17:00", "18:30", "20:00"]
+        )
 
     def update_size(self):
         """Updates the size of the widget"""
@@ -64,21 +70,18 @@ class ScheduleView(QTableWidget):
         )
 
 
-class MainWindow(QWidget):
-    """Main Wondow of the application"""
-
-    # TODO: usar QWindow
+class MainWindow(QMainWindow):
+    """Main Window of the application"""
 
     def __init__(self):
         super().__init__()
         self.schedule_object = None
         self.init_ui()
-        self.setFixedSize(500, 360)
-        self.setStyleSheet(style)
+        self.setStyleSheet(WINDOW_STYLE)
         self.setWindowTitle("NRC a iCalendar")
-        self.setWindowIcon(QIcon(path.join("assets", "icon.svg")))
+        self.setWindowIcon(QIcon(get_path("assets", "icon.svg")))
 
-        # Dialogo para guradar el archivo
+        # Dialogo para guardar el archivo
         self.save_dialog = QFileDialog(self)
         self.save_dialog.setFileMode(QFileDialog.AnyFile)
         self.save_dialog.setNameFilter("iCalendar (*.ics)")
@@ -87,43 +90,84 @@ class MainWindow(QWidget):
 
     def init_ui(self):
         """Makes the layout"""
-        main_layout = QVBoxLayout(self)
+        menu_bar = self.menuBar()
+
+        options_menu = menu_bar.addMenu("Opciones")
+        self.act_allways_visible = options_menu.addAction("Siempre visible")
+        self.act_allways_visible.setCheckable(True)
+        self.act_allways_visible.toggled.connect(self.__allways_visible)
+
+        main_widget = QFrame()
+        self.setCentralWidget(main_widget)
+
+        main_layout = QVBoxLayout(main_widget)
+        main_widget.setLayout(main_layout)
+
         main_layout.setSizeConstraint(QLayout.SetMinimumSize)
 
         # Lista de códigos a ingresar
         code_layout = QHBoxLayout()
         main_layout.addLayout(code_layout)
-        self.code_list = [QLineEdit(self) for i in range(6)]
+        self.code_list = [QLineEdit(main_widget) for i in range(6)]
+        code_validator = QIntValidator(main_layout, 10 ** 4, 10 ** 5)
         for code in self.code_list:
             code.setObjectName("code_field")
             code.setAlignment(Qt.AlignCenter)
             code.setMaxLength(5)
-            # code.setInputMask("99999")
-            # Funciona para limitar input numérico, pero es muy molesto, ya que
-            # requeña el QLineEdit con espacios y cambia el modo de escritura a
-            # instertar cuando está lleno.
+            code.setValidator(code_validator)
+            code.textEdited.connect(self.check_codes)
             code_layout.addWidget(code)
 
-        self.get_button = QPushButton("Obtener horario", self)
+        self.get_button = QPushButton("Obtener horario", main_widget)
         self.get_button.clicked.connect(self.get_schedule)
+        self.get_button.setCursor(Qt.PointingHandCursor)
+        self.get_button.setDisabled(True)
         main_layout.addWidget(self.get_button)
 
-        self.schedule_view = ScheduleView(8, 6, self)
+        self.schedule_view = ScheduleView(8, 6, main_widget)
         main_layout.addWidget(self.schedule_view)
 
-        self.save_button = QPushButton("Guardar horario", self)
+        self.save_button = QPushButton("Guardar horario", main_widget)
         self.save_button.clicked.connect(self.save_schedule)
+        self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.setDisabled(True)
         main_layout.addWidget(self.save_button)
 
+        self.status_bar = QStatusBar(self)
+        self.status_bar.showMessage("Ingrese los códigos NRC")
+        self.setStatusBar(self.status_bar)
+
         self.adjustSize()
+
+    def __allways_visible(self, option):
+        flags = self.windowFlags()
+        if option:
+            self.setWindowFlags(flags | Qt.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(flags ^ Qt.WindowStaysOnTopHint)
+        self.show()
+
+    def check_codes(self):
+        """Check if the codes are valid"""
+        at_least_one_valid = False
+        for code in self.code_list:
+            if valid_nrc(code.text()):
+                at_least_one_valid = True
+            elif code.text():
+                # TODO: cambiar el estilo al ser invalido y tener texto
+                pass
+            else:
+                pass
+
+        self.get_button.setDisabled(not at_least_one_valid)
+
+        if at_least_one_valid:
+            self.status_bar.clearMessage()
+        else:
+            self.status_bar.showMessage("Ingrese los códigos NRC")
 
     def get_schedule(self):
         """Get the schedule of Buscacursos UC"""
-        # TODO: limpiar el método
-        # Se debería habilitar el botón para obtener cursos cuando al menos
-        # uno de los códigos es valido
-
         valid_codes = list(filter(valid_nrc, map(QLineEdit.text, self.code_list)))
 
         if not valid_codes:
@@ -136,13 +180,17 @@ class MainWindow(QWidget):
                 QMessageBox.Critical, "Error", "No se ha podido importar el horario"
             )
             error_box.exec_()
-            return
+        else:
+            self.show_schedule()
 
+
+    def show_schedule(self):
+        """Show the schedule in the table"""
         # Limpia el horario
         self.schedule_view.clearContents()
 
         # Si no hay módulos, se deshabilita la opción de guardar y termina
-        if not self.schedule_object:
+        if not self.schedule_object.courses:
             self.schedule_view.update_size()
             self.save_button.setDisabled(True)
             return
