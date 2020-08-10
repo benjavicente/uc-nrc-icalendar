@@ -1,4 +1,9 @@
 arrow>=0.14
 beautifulsoup4>=4
+black>=19
 lxml>=4.5
+pyinstaller>=3.6
+pylint>=2.5
 PySide2>=5.15
+requests>=2.23
+wheel>=0.34

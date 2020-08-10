@@ -21,6 +21,7 @@ output/
 
 # Build
 dist/
-build/
+build/*
+!*.spec
 *.cmd
 *.exe
