@@ -5,10 +5,10 @@
 
 import os
 import sys
+import webbrowser
 
 from PySide2.QtCore import Qt
-from PySide2.QtGui import QIcon
-from PySide2.QtGui import QIcon, QIntValidator
+from PySide2.QtGui import QIcon, QIntValidator, QClipboard
 from PySide2.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -37,6 +37,9 @@ def get_path(*path):
 
 with open(get_path("assets", "gui_style.css"), mode="r", encoding="utf-8") as file:
     WINDOW_STYLE = file.read()
+
+with open(get_path("assets", "uc_calendars.csv"), mode="r", encoding="utf-8") as file:
+    OTHER_CALENDARS = [c.split(",") for c in file.read().strip().split("\n")]
 
 
 class ScheduleView(QTableWidget):
@@ -80,6 +83,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(WINDOW_STYLE)
         self.setWindowTitle("NRC a iCalendar")
         self.setWindowIcon(QIcon(get_path("assets", "icon.svg")))
+        self.clikboard = QClipboard()
 
         # Dialogo para guardar el archivo
         self.save_dialog = QFileDialog(self)
@@ -90,12 +94,35 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         """Makes the layout"""
+
+        # Barra de opciones y links de interés
         menu_bar = self.menuBar()
 
-        options_menu = menu_bar.addMenu("Opciones")
-        self.act_allways_visible = options_menu.addAction("Siempre visible")
-        self.act_allways_visible.setCheckable(True)
-        self.act_allways_visible.toggled.connect(self.__allways_visible)
+        options_menu = menu_bar.addMenu("&Opciones")
+        act_allways_visible = options_menu.addAction("Siempre visible")
+        act_allways_visible.setCheckable(True)
+        act_allways_visible.toggled.connect(self.__allways_visible)
+
+        uc_calendars_menu = menu_bar.addMenu("&Calendarios")
+        for name, link in OTHER_CALENDARS:
+            calendar_option = uc_calendars_menu.addAction(name)
+            # TODO: Ni idea pq se necesita tener una variable `s`, sin esta no funciona
+            calendar_option.triggered.connect(lambda s=None, l=link: self.__to_clipboard(l))
+
+        go_to_menu = menu_bar.addMenu("&Ir a")
+        go_to_options = [
+            ("Feed del calendario de Canvas", "https://cursos.canvas.uc.cl/calendar"),
+            (
+                "Importar calendario a Google",
+                "https://calendar.google.com/calendar/a/uc.cl/r/settings/export",
+            ),
+        ]
+
+        for name, link in go_to_options:
+            new_option = go_to_menu.addAction(name)
+            new_option.triggered.connect(lambda s=None, l=link: webbrowser.open(l))
+
+        # Main widget
 
         main_widget = QFrame()
         self.setCentralWidget(main_widget)
@@ -147,6 +174,10 @@ class MainWindow(QMainWindow):
             self.setWindowFlags(flags ^ Qt.WindowStaysOnTopHint)
         self.show()
 
+    def __to_clipboard(self, link):
+        self.clikboard.setText(link)
+        self.status_bar.showMessage("URL del calendario copiado a portapapeles")
+
     def check_codes(self):
         """Check if the codes are valid"""
         at_least_one_valid = False
@@ -182,7 +213,6 @@ class MainWindow(QMainWindow):
             error_box.exec_()
         else:
             self.show_schedule()
-
 
     def show_schedule(self):
         """Show the schedule in the table"""
