@@ -1,0 +1,24 @@
+[
+    {
+        "name": "Canavas",
+        "links": [
+            {
+                "description": "Feed del calendario de Canvas",
+                "url": "https://cursos.canvas.uc.cl/calendar"
+            }
+        ]
+    },
+    {
+        "name": "Google",
+        "links": [
+            {
+                "description": "Importar archivo iCalendar a Google",
+                "url": "https://calendar.google.com/calendar/a/uc.cl/r/settings/export"
+            },
+            {
+                "description": "Agregar URL de un calendario a Google",
+                "url": "https://calendar.google.com/calendar/a/uc.cl/r/settings/addbyurl"
+            }
+        ]
+    }
+]

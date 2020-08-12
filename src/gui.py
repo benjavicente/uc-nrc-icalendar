@@ -46,9 +46,11 @@ def get_path(*path):
 with open(get_path("assets", "gui_style.css"), mode="r", encoding="utf-8") as file:
     WINDOW_STYLE = file.read()
 
-with open(get_path("assets", "calendars.jsonc"), mode="r", encoding="utf-8") as file:
+with open(get_path("assets", "calendars.json"), mode="r", encoding="utf-8") as file:
     OTHER_CALENDARS = json.load(file, object_hook=JsonObj)
 
+with open(get_path("assets", "links.json"), mode="r", encoding="utf-8") as file:
+    LINKS = json.load(file, object_hook=JsonObj)
 
 
 class ScheduleView(QTableWidget):
@@ -120,23 +122,12 @@ class MainWindow(QMainWindow):
                 option.triggered.connect(lambda s=None, l=calendar.url: self.__to_clipboard(l))
 
         go_to_menu = menu_bar.addMenu("&Ir a")
-        go_to_options = [
-            ("Feed del calendario de Canvas", "https://cursos.canvas.uc.cl/calendar"),
-            (
-                "Importar calendario con ics a Google",
-                "https://calendar.google.com/calendar/a/uc.cl/r/settings/export",
-            ),
-            (
-                "Agregar calendario por URL en Google",
-                "https://calendar.google.com/calendar/a/uc.cl/r/settings/addbyurl",
-            )
-        ]
-
-        for i, (name, link) in enumerate(go_to_options):
-            if i == 1:
+        for i, link_group in enumerate(LINKS):
+            for link in link_group.links:
+                new_option = go_to_menu.addAction(link.description)
+                new_option.triggered.connect(lambda s=None, l=link.url: webbrowser.open(l))
+            if i - 1 != len(LINKS):
                 go_to_menu.addSeparator()
-            new_option = go_to_menu.addAction(name)
-            new_option.triggered.connect(lambda s=None, l=link: webbrowser.open(l))
 
         # Main widget
 
@@ -214,7 +205,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Ingrese los códigos NRC")
 
     def get_schedule(self):
-        """Get the schedule of Buscacursos UC"""
+        """Get the schedule of BuscaCursos UC"""
         valid_codes = list(filter(valid_nrc, map(QLineEdit.text, self.code_list)))
 
         if not valid_codes:
