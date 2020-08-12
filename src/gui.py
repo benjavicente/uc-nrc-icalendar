@@ -6,6 +6,8 @@
 import os
 import sys
 import webbrowser
+import json
+import types
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QIcon, QIntValidator, QClipboard
@@ -30,6 +32,12 @@ from PySide2.QtWidgets import (
 from schedule import Schedule, valid_nrc
 
 
+class JsonObj(types.SimpleNamespace):
+    """Class of json objects"""
+    def __init__(self, json_dict):
+        super().__init__(**json_dict)
+
+
 def get_path(*path):
     """Gets the path of the file, from a executable or python environment"""
     return os.path.join(getattr(sys, "_MEIPASS", os.getcwd()), *path)
@@ -38,8 +46,9 @@ def get_path(*path):
 with open(get_path("assets", "gui_style.css"), mode="r", encoding="utf-8") as file:
     WINDOW_STYLE = file.read()
 
-with open(get_path("assets", "uc_calendars.csv"), mode="r", encoding="utf-8") as file:
-    OTHER_CALENDARS = [c.split(",") for c in file.read().strip().split("\n")]
+with open(get_path("assets", "calendars.jsonc"), mode="r", encoding="utf-8") as file:
+    OTHER_CALENDARS = json.load(file, object_hook=JsonObj)
+
 
 
 class ScheduleView(QTableWidget):
@@ -103,22 +112,29 @@ class MainWindow(QMainWindow):
         act_allways_visible.setCheckable(True)
         act_allways_visible.toggled.connect(self.__allways_visible)
 
-        uc_calendars_menu = menu_bar.addMenu("&Calendarios")
-        for name, link in OTHER_CALENDARS:
-            calendar_option = uc_calendars_menu.addAction(name)
-            # TODO: Ni idea pq se necesita tener una variable `s`, sin esta no funciona
-            calendar_option.triggered.connect(lambda s=None, l=link: self.__to_clipboard(l))
+        calendars_menu = menu_bar.addMenu("&Calendarios")
+        for calendar_group in OTHER_CALENDARS:
+            section = calendars_menu.addMenu(calendar_group.name)
+            for calendar in calendar_group.calendars:
+                option = section.addAction(calendar.name)
+                option.triggered.connect(lambda s=None, l=calendar.url: self.__to_clipboard(l))
 
         go_to_menu = menu_bar.addMenu("&Ir a")
         go_to_options = [
             ("Feed del calendario de Canvas", "https://cursos.canvas.uc.cl/calendar"),
             (
-                "Importar calendario a Google",
+                "Importar calendario con ics a Google",
                 "https://calendar.google.com/calendar/a/uc.cl/r/settings/export",
             ),
+            (
+                "Agregar calendario por URL en Google",
+                "https://calendar.google.com/calendar/a/uc.cl/r/settings/addbyurl",
+            )
         ]
 
-        for name, link in go_to_options:
+        for i, (name, link) in enumerate(go_to_options):
+            if i == 1:
+                go_to_menu.addSeparator()
             new_option = go_to_menu.addAction(name)
             new_option.triggered.connect(lambda s=None, l=link: webbrowser.open(l))
 
