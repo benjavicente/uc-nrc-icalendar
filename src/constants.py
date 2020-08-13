@@ -43,7 +43,9 @@ ICS_ARROW_DATETIME_FORMAT = "YYYYMMDDTHHmmss"
 ICS_ARROW_TIME_FORMAT = "HHmmss"
 ICS_ARROW_DATE_FORMAT = "YYYYMMDD"
 
-BC_TO_ICS_DAY_NAMES = OrderedDict(L="MO", M="TU", W="WE", J="TH", V="FR", S="SA", D="SU")
+BC_TO_ICS_DAY_NAMES = OrderedDict(
+    L="MO", M="TU", W="WE", J="TH", V="FR", S="SA", D="SU"
+)
 
 CALENDAR_TEMPLETE = Template(
     "\n".join(

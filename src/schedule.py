@@ -39,11 +39,15 @@ def get_ex_dates(start: arrow.Arrow) -> str:
     return "\n".join(
         map(
             lambda h, s=start: EX_DATE_TEMPLATE.substitute(
-                {"date": h.format(ICS_ARROW_DATE_FORMAT), "start": s.format(ICS_ARROW_TIME_FORMAT),}
+                {
+                    "date": h.format(ICS_ARROW_DATE_FORMAT),
+                    "start": s.format(ICS_ARROW_TIME_FORMAT),
+                }
             ),
             HOLIDAYS,
         )
     )
+
 
 def valid_nrc(nrc: str) -> bool:
     """Checks if aa string is a valid ncr"""
@@ -74,7 +78,9 @@ class Course:
 
     @property
     def description(self):
-        return "\n".join((self.data["code"], ", ".join(self.data["teachers"]), self.data["campus"]))
+        return "\n".join(
+            (self.data["code"], ", ".join(self.data["teachers"]), self.data["campus"])
+        )
 
     def to_ics(self):
         """Tranforms the Course to the iCalendar format"""
@@ -90,7 +96,9 @@ class Course:
             last_event = None
             events_in_the_day = list()
             for mod in map(str, range(1, 9)):
-                mathed_modules = [m for m in self.data["modules"] if m["module"] == (day, mod)]
+                mathed_modules = [
+                    m for m in self.data["modules"] if m["module"] == (day, mod)
+                ]
                 for module in mathed_modules:
                     if last_event:
                         tp_l = attrgetter("type_", "classroom")(last_event)
@@ -98,7 +106,9 @@ class Course:
                         if tp_l == tp_m:
                             last_event.mods.append(mod)
                             continue
-                    last_event = Event([day], [mod], module["type_"], module["classroom"])
+                    last_event = Event(
+                        [day], [mod], module["type_"], module["classroom"]
+                    )
                     events_in_the_day.append(last_event)
             week_events.append(events_in_the_day)
 
@@ -123,7 +133,9 @@ class Course:
             day_number = list(BC_TO_ICS_DAY_NAMES).index(event.days[0])
             base_day = FIRST_DAY.shift(weekday=day_number)
             start = base_day.replace(**MODULE_START_TIME[first_module])
-            end = base_day.replace(**MODULE_START_TIME[last_module]).shift(**MODULE_LENGTH)
+            end = base_day.replace(**MODULE_START_TIME[last_module]).shift(
+                **MODULE_LENGTH
+            )
 
             days = ",".join((BC_TO_ICS_DAY_NAMES[d] for d in event.days))
             name_prefix = "" if event.type_ == "CLAS" else f"{event.type_} "
@@ -208,7 +220,9 @@ class Schedule:
                 # Si no existe se agrega una fila
                 if not has_space:
                     table[i_mod].append([None for i in range(6)])
-                    table[i_mod][-1][i_mod] = Module(course.code_section, module["type_"])
+                    table[i_mod][-1][i_mod] = Module(
+                        course.code_section, module["type_"]
+                    )
 
         return table
 
