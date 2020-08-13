@@ -36,7 +36,7 @@ while True:
 
         opt = input("S/N -> ").strip().lower()
 
-        if opt in ["S", "s", "Y", "y"]:
+        if opt in ["s", "y"]:
             makedirs(OUT_DIRECORY, exist_ok=True)
             with open(path.join(OUT_DIRECORY, OUT_FILE), "w", encoding="utf-8") as file:
                 file.write(results.to_ics())
