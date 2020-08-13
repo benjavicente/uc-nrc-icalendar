@@ -6,11 +6,14 @@ de NRCs y crea un calendario en formato iCalendar.
 No crea eventos en los feriados (incluyendo la semana de receso).
 Inician desde el 10 de Agosto hasta el 4 de Diciembre (inclusive).
 
+Incluye las fechas de las evaluaciones si es que estas están
+disponibles en BuscaCursos.
+
 Los calendarios pueden ser importados a [Google Calendar][gg-import].
 
 ## Descargar aplicación
 
-### [Windows] (46.1MB)
+### [Windows] (46MB)
 
 La aplicación puede ser bloqueada por SmartScreen al ejecutarla por
 primera vez. Al solicitar más información se mostrará la opción para
@@ -58,6 +61,6 @@ Para mostrar el GUI: `src/gui.py`
 
 
 
-[windows]: https://github.com/benjavicente/uc-nrc-icalendar/releases/download/v0.3/uc-nrc-icalendar.exe
+[windows]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/uc-nrc-icalendar.exe
 [gg-import]: https://calendar.google.com/calendar/r/settings/export
 [venv-guide]: https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment
