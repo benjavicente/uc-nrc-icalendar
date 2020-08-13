@@ -1,15 +1,13 @@
 # NRC a iCalendar
 
 Script que toma los horarios de BuscaCursos UC a partir de una lista
-de NRCs y crea un calendario en formato iCalendar.
+de NRCs y crea un calendario en formato iCalendar que puede ser [importado a Google Calendar.][gg-import]
 
 No crea eventos en los feriados (incluyendo la semana de receso).
 Inician desde el 10 de Agosto hasta el 4 de Diciembre (inclusive).
 
 Incluye las fechas de las evaluaciones si es que estas están
 disponibles en BuscaCursos.
-
-Los calendarios pueden ser importados a [Google Calendar][gg-import].
 
 ## Descargar aplicación
 
@@ -21,43 +19,43 @@ ejecutarlo de todas formas.
 
 ## Descarga y uso por git
 
-### Obtención del repositorio
+### Obtener el repositorio
 
 ```cmd
 git clone https://github.com/benjavicente/uc-nrc-icalendar.git
 cd uc-nrc-icalendar
 ```
 
-### Creación de un entorno virtual (opcional)
+### Crear un entorno virtual (opcional)
 
 [Guía de entornos virtuales][venv-guide]
 
-En windows
-
+En Windows:
 ```cmd
 py -m venv env
 env\Scripts\activate
 ```
 
-En macOS y Linux
+En macOS y Linux>
 
-```bash
+```shell
 python3 -m venv env
-env/bin/activate
+source env/bin/activate # en bash/zsh
+. env/bin/activate.fish # en fish
 ```
 
 ### Descarga de módulos
 
-```cmd
+```shell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 ### Uso
 
-Para mostrar el interfaz de la consola: `src/main.py`
+Para mostrar el interfaz de la consola: `src/main.py`.
 
-Para mostrar el GUI: `src/gui.py`
+Para mostrar el GUI ejecuta `src/gui.py`.
 
 
 
