@@ -57,7 +57,8 @@ Para mostrar el interfaz de la consola: `src/main.py`.
 
 Para mostrar el GUI ejecuta `src/gui.py`.
 
-
+## Licencia
+Este programa es software libre licenciado bajo la licencia GPLv3. Puedes leerla en [LICENSE.md](LICENSE.md). Copyright, Benjamín Vicente 2020.
 
 [windows]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/uc-nrc-icalendar.exe
 [gg-import]: https://calendar.google.com/calendar/r/settings/export
