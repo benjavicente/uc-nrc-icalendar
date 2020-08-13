@@ -1,0 +1,60 @@
+[
+  {
+    "name": "UC Oficiales",
+    "calendars": [
+      {
+        "name": "Calendario Alumno",
+        "url": "http://www.google.com/calendar/ical/uc.cl_qq0otahfbtlv616n02184c9hjo%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Calendario Comunidad UC",
+        "url": "http://www.google.com/calendar/ical/uc.cl_6kvactld6hhehsg57rbl9kq64k%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Académico",
+        "url": "http://www.google.com/calendar/ical/uc.cl_b2monugqiq34gpg74jdkfma0e4%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Funcionario",
+        "url": "http://www.google.com/calendar/ical/uc.cl_pp7pgnldmqhl6qc4duancpbleg%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Facultad",
+        "url": "http://www.google.com/calendar/ical/uc.cl_0laemjr7clprvhq0ule6tek59s%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Alumno Nuevo",
+        "url": "http://www.google.com/calendar/ical/uc.cl_u4rkvdlj8sb3bghid0466lcur4%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Alumno Extranjero",
+        "url": "http://www.google.com/calendar/ical/uc.cl_c51rrqpdsriq5fdib5307u3lk8%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Postulante",
+        "url": "http://www.google.com/calendar/ical/uc.cl_3ri0ouia11aqeobsp4d5tu4f44%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "College",
+        "url": "http://www.google.com/calendar/ical/uc.cl_0vb6d28tuh4748ft78e97rt7n0%40group.calendar.google.com/public/basic.ics"
+      },
+      {
+        "name": "Alumno UC Postulante Intercambio",
+        "url": "http://www.google.com/calendar/ical/uc.cl_ub2afrt81huul3s52aff6sb664%40group.calendar.google.com/public/basic.ics"
+      }
+    ]
+  },
+  {
+    "name": "Ingeniería",
+    "calendars": [
+      {
+        "name": "DiPre",
+        "url": "http://www.google.com/calendar/ical/calendariodipre%40ing.puc.cl/public/basic.ics"
+      },
+      {
+        "name": "CAi 2020",
+        "url": "http://www.google.com/calendar/ical/uc.cl_4e59qqmgdo5h78r30vf8kfb5pg%40group.calendar.google.com/public/basic.ics"
+      }
+    ]
+  }
+]

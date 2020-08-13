@@ -27,6 +27,7 @@ MODULE_START_TIME = {
 
 HOLIDAYS = (
     arrow.get(2020, 8, 15),  # La Asunción de la Virgen
+    arrow.get(2020, 9, 17),  # Feriado
     arrow.get(2020, 9, 18),  # 1ra Junta Nacional de Gobierno
     arrow.get(2020, 9, 19),  # Día de las Glorias del Ejército
     arrow.get(2020, 9, 21),  # Semana de receso
