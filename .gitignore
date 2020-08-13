@@ -6,7 +6,7 @@ Thumbs.db
 
 # Python
 __pycache__/
-*.py[cod]
+*.py[codz]
 
 # Workspace
 .vscode/
@@ -20,8 +20,7 @@ env/
 output/
 
 # Build
-dist/
-build/*
-!*.spec
+src/dist/
+src/build/uc-nrc-icalendar/*
 *.cmd
 *.exe

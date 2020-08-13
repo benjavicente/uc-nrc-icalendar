@@ -7,7 +7,7 @@ import html
 from collections import defaultdict
 from itertools import product
 from multiprocessing.dummy import Pool as ThreadPool
-from typing import Iterable, Tuple
+from typing import Iterable
 
 import requests as rq
 from bs4 import BeautifulSoup
@@ -39,6 +39,21 @@ MODULE_COLUMNS_NAMES = (
     "module",
     "classroom",
 )
+
+MONTH_NUMBERS = {
+    "Enero": 1,
+    "Febrero": 2,
+    "Marzo": 3,
+    "Abril": 4,
+    "Mayo": 5,
+    "Junio": 6,
+    "Julio": 7,
+    "Agosto": 8,
+    "Septiembre": 9,
+    "Octubre": 10,
+    "Noviembre": 11,
+    "Diciembre": 12,
+}
 
 NCR_INDEX = 0
 TEACHER_INDEX = 10
@@ -86,9 +101,7 @@ def _clean_courses_row(row) -> dict:
         if table:
             modules = list()
             for mod_row in data.find_all("tr"):
-                mod, type_, classroom = map(
-                    lambda r: r.text.strip(), mod_row.find_all("td")
-                )
+                mod, type_, classroom = map(lambda r: r.text.strip(), mod_row.find_all("td"))
                 days, hours = mod.split(":")
                 if not days or not hours:
                     continue
@@ -131,33 +144,13 @@ def get_specific_courses(nrc_codes: Iterable) -> list:
         return pool.map(lambda nrc: get_courses(nrc=nrc), nrc_codes)
 
 
-# EXPERIMENTAL
-
-MONTH_NUMBERS = {
-    "Enero": 1,
-    "Febrero": 2,
-    "Marzo": 3,
-    "Abril": 4,
-    "Mayo": 5,
-    "Junio": 6,
-    "Julio": 7,
-    "Agosto": 8,
-    "Septiembre": 9,
-    "Octubre": 10,
-    "Noviembre": 11,
-    "Diciembre": 12,
-}
-
-
 def get_exams(
     courses: Iterable["code-section"], semester=CURRENT_SEMESTER, year=CURRENT_YEAR
-):
+) -> list:
     """Get the tests from multiple courses"""
     # TODO: cleanup
     cookies = {f"cursosuc-{year}-{semester}": "%2C".join(courses)}
-    soup = _get_soup(
-        "http://buscacursos.uc.cl/calendarioPruebas.ajax.php", cookies=cookies
-    )
+    soup = _get_soup("http://buscacursos.uc.cl/calendarioPruebas.ajax.php", cookies=cookies)
 
     test_list = list()
 
@@ -188,6 +181,7 @@ def get_exams(
                             "date": (int(year), int(month), int(day)),
                         }
                     )
+
     return test_list
 
 

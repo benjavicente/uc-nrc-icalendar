@@ -27,14 +27,13 @@ from constants import (
 
 from scraper import get_specific_courses, get_exams
 
-
 def scape_str(string: str) -> str:
-    """Scapes a string"""
+    """Escapes a string"""
     return repr(string).strip("'")
 
 
 def get_ex_dates(start: arrow.Arrow) -> str:
-    """Get a str with ExDates of the iCalendar"""
+    """Get a string with ExDates of the iCalendar"""
     # TODO: retornar solo los feriados que estén en el mismo día de la semana
     return "\n".join(
         map(
@@ -50,7 +49,7 @@ def get_ex_dates(start: arrow.Arrow) -> str:
 
 
 def valid_nrc(nrc: str) -> bool:
-    """Checks if aa string is a valid ncr"""
+    """Checks if aa string is a valid NRC"""
     return len(nrc) == 5 and nrc.isdecimal()
 
 
@@ -74,23 +73,25 @@ class Course:
 
     @property
     def code_section(self):
+        """Code and section"""
         return "-".join((self.data["code"], self.data["section"]))
 
     @property
     def description(self):
+        """Description of a course"""
         return "\n".join(
             (self.data["code"], ", ".join(self.data["teachers"]), self.data["campus"])
         )
 
     def to_ics(self):
-        """Tranforms the Course to the iCalendar format"""
+        """Transforms the Course to the iCalendar format"""
         # TODO: esto se puede mejorar considerablemente
         # TODO: ordenar variables
         ics = list()
 
         # Primero se crean los eventos de las clases
 
-        # Extentción vertical
+        # Extensión vertical
         week_events = list()
         for day in "LMWJVS":
             last_event = None
@@ -112,7 +113,7 @@ class Course:
                     events_in_the_day.append(last_event)
             week_events.append(events_in_the_day)
 
-        # Extención horizontal
+        # Extensión horizontal
         events = list()
         for day1, list1 in enumerate(week_events):
             for day2 in range(day1 + 1, len(week_events)):
@@ -125,7 +126,7 @@ class Course:
                             break
             events.extend(list1)
 
-        # Se crean los eventos ics de los modulos
+        # Se crean los eventos ics de los módulos
         for event in events:
             first_module = min(map(int, event.mods))
             last_module = max(map(int, event.mods))
@@ -228,9 +229,9 @@ class Schedule:
 
     def display(self, show_color: bool = False) -> str:
         """Shows the module in a string table-like format"""
-        # TODO: color
+        # TODO: color (colorama)
         table = self.get_table()
-        # Se hace el str de la tabla
+        # Se hace el string de la tabla
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
