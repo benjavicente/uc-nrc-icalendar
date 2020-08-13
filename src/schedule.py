@@ -8,6 +8,7 @@ from uuid import uuid4
 from collections import namedtuple
 
 import arrow
+import colorama
 
 from constants import (
     CALENDAR_TEMPLETE,
@@ -26,6 +27,17 @@ from constants import (
 )
 
 from scraper import get_specific_courses, get_exams
+
+colorama.init(autoreset=True)
+
+# TODO: check other modules types
+MODULE_COLORS = {
+    "CLAS": colorama.Back.RED,
+    "AYU": colorama.Back.GREEN,
+    "LAB": colorama.Back.BLUE,
+    "TAL": colorama.Back.MAGENTA
+}
+
 
 def scape_str(string: str) -> str:
     """Escapes a string"""
@@ -51,6 +63,13 @@ def get_ex_dates(start: arrow.Arrow) -> str:
 def valid_nrc(nrc: str) -> bool:
     """Checks if aa string is a valid NRC"""
     return len(nrc) == 5 and nrc.isdecimal()
+
+
+def color_moudle(code, type_) -> str:
+    """Colors the module (string len increases by 9)"""
+    return "".join(
+        (MODULE_COLORS.get(type_, colorama.Back.BLACK), code, colorama.Style.RESET_ALL)
+    )
 
 
 Exam = namedtuple("Exam", ("name", "date"))
@@ -229,15 +248,20 @@ class Schedule:
 
     def display(self, show_color: bool = False) -> str:
         """Shows the module in a string table-like format"""
-        # TODO: color (colorama)
         table = self.get_table()
         # Se hace el string de la tabla
         output = "  ║" + "│".join(map(lambda r: r.center(11), "LMWJVS")) + "\n"
         for mod_number, mod_group in enumerate(table):
             for i, row in enumerate(mod_group):
-                str_row = map(lambda r: r.code if r else str(), row)
+                if show_color:
+                    str_row = [
+                        color_moudle(r.code, r.type_).center(20) if r else " " * 11
+                        for r in row
+                    ]
+                else:
+                    str_row = [r.code.center(11) if r else " " * 11 for r in row]
                 output += "  ║" if i else f"{mod_number + 1} ║"
-                output += "│".join(map(lambda r: r.center(11), str_row))
+                output += "│".join(str_row)
                 output += "\n" if mod_number != len(table) - 1 else ""
         return output
 
@@ -249,5 +273,4 @@ class Schedule:
 
 if __name__ == "__main__":
     x = Schedule.get(["20803"])
-    # print(x.to_ics())
-    print(x.display(), sep="\n")
+    print(x.display(True), sep="\n")
