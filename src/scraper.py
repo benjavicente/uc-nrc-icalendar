@@ -86,7 +86,9 @@ def _clean_courses_row(row) -> dict:
         if table:
             modules = list()
             for mod_row in data.find_all("tr"):
-                mod, type_, classroom = map(lambda r: r.text.strip(), mod_row.find_all("td"))
+                mod, type_, classroom = map(
+                    lambda r: r.text.strip(), mod_row.find_all("td")
+                )
                 days, hours = mod.split(":")
                 if not days or not hours:
                     continue
@@ -147,11 +149,15 @@ MONTH_NUMBERS = {
 }
 
 
-def get_exams(courses: Iterable["code-section"], semester=CURRENT_SEMESTER, year=CURRENT_YEAR):
+def get_exams(
+    courses: Iterable["code-section"], semester=CURRENT_SEMESTER, year=CURRENT_YEAR
+):
     """Get the tests from multiple courses"""
     # TODO: cleanup
     cookies = {f"cursosuc-{year}-{semester}": "%2C".join(courses)}
-    soup = _get_soup("http://buscacursos.uc.cl/calendarioPruebas.ajax.php", cookies=cookies)
+    soup = _get_soup(
+        "http://buscacursos.uc.cl/calendarioPruebas.ajax.php", cookies=cookies
+    )
 
     test_list = list()
 
@@ -175,15 +181,19 @@ def get_exams(courses: Iterable["code-section"], semester=CURRENT_SEMESTER, year
 
                 for test in tests:
                     name, course = test.text.split(" \xa0")
-                    test_list.append({
-                        "name": name,
-                        "course_code": course,
-                        "date": (int(year), int(month), int(day))
-                    })
+                    test_list.append(
+                        {
+                            "name": name,
+                            "course_code": course,
+                            "date": (int(year), int(month), int(day)),
+                        }
+                    )
     return test_list
+
 
 # Example
 if __name__ == "__main__":
     RESULT = get_courses(nrc="16312"), get_courses(nrc="20803")
     from pprint import pprint
+
     pprint(RESULT)
