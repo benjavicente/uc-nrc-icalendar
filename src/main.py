@@ -17,10 +17,10 @@ print(
 """
 )
 
-print("Ingresar los NRC separados por espacios")
+print("Ingresa los NRC separados por espacios.")
 
 while True:
-    acc = input("\nNRC -> ")
+    acc = input("\nNRCs -> ")
 
     if not acc:
         break
@@ -28,17 +28,17 @@ while True:
     nfc_list = acc.split()
 
     if all(map(valid_nrc, nfc_list)):
-        RESULTS = Schedule.get(nfc_list)
-        print("Cursos importados:", *RESULTS.courses, sep="\n", end="\n" * 2)
+        results = Schedule.get(nfc_list)
+        print("Cursos importados:", *results.courses, sep="\n", end="\n" * 2)
 
-        print("Cargar el siguiente calendario?")
-        print(RESULTS.display())
+        print("¿Cargar el siguiente calendario?")
+        print(results.display())
 
-        opt = input("Y/N -> ").strip().lower()
+        opt = input("S/N -> ").strip().lower()
 
-        if opt == "y":
+        if opt in ["S", "s", "Y", "y"]:
             makedirs(OUT_DIRECORY, exist_ok=True)
             with open(path.join(OUT_DIRECORY, OUT_FILE), "w", encoding="utf-8") as file:
-                file.write(RESULTS.to_ics())
-            print("Calendario gurdado en", path.join(OUT_DIRECORY, OUT_FILE))
+                file.write(results.to_ics())
+            print("Calendario guardado en", path.join(OUT_DIRECORY, OUT_FILE))
             print(path.join(getcwd(), OUT_DIRECORY, OUT_FILE))
