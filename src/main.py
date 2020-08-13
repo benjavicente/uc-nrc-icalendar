@@ -28,7 +28,7 @@ while True:
     nfc_list = acc.split()
 
     if all(map(valid_nrc, nfc_list)):
-        RESULTS = Schedule.get_courses(nfc_list)
+        RESULTS = Schedule.get(nfc_list)
         print("Cursos importados:", *RESULTS.courses, sep="\n", end="\n" * 2)
 
         print("Cargar el siguiente calendario?")
