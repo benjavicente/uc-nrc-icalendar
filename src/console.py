@@ -9,11 +9,11 @@ OUT_FILE = "calendario.ics"
 
 print(
     """
-█▙  █ ███▖ ▟██▙             ▐▌
-██▙ █ █  █ █▘      ▗▄▄▖    ▄▄▖  ▗▄▄▖ ▗▄▄▖
-█▝█▙█ ███▛ █       ▘  █    ▀▜▌  █▛▀▀ █▀▀▀
-█ ▝██ █ ▝▙ █▖      ▟▀▜█     ▐▌  █▖   ▝▀▀█
-█  ▝█ █  █ ▜██▛    ▜▃▞█    ████ ▜██▛ ▜██▛
+█   █ ███  ████            █
+██  █ █  █ █       ▄▄▄    ▄▄  ▄▄▄ ▄▄▄▄
+█ █ █ ███  █         █    ▀█  █▀▀ █▀▀▀
+█  ██ █  █ █       █▀█     █  █   ▀▀▀█
+█   █ █  █ ████    █▄█    ███ ███ ████
 """
 )
 
@@ -29,10 +29,11 @@ while True:
 
     if all(map(valid_nrc, nfc_list)):
         results = Schedule.get(nfc_list)
-        print("Cursos importados:", *results.courses, sep="\n", end="\n" * 2)
+        # TODO: display the names of the imported courses
+        # print("Cursos importados:", *results.courses, sep="\n", end="\n" * 2)
 
         print("¿Cargar el siguiente calendario?")
-        print(results.display())
+        print(results.display(True))
 
         opt = input("S/N -> ").strip().lower()
 

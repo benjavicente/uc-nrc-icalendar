@@ -34,6 +34,7 @@ from schedule import Schedule, valid_nrc
 
 class JsonObj(types.SimpleNamespace):
     """Class of json objects"""
+
     def __init__(self, json_dict):
         super().__init__(**json_dict)
 
@@ -265,8 +266,8 @@ class MainWindow(QMainWindow):
         """Saves the schedule"""
         if self.save_dialog.exec_():
             out_dir = self.save_dialog.selectedFiles()[0]
-            with open(out_dir, mode="w", encoding="utf-8") as file:
-                file.write(self.schedule_object.to_ics())
+            with open(out_dir, mode="w", encoding="utf-8") as ics_file:
+                ics_file.write(self.schedule_object.to_ics())
 
 
 if __name__ == "__main__":

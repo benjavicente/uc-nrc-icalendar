@@ -1,6 +1,7 @@
 arrow>=0.14
 beautifulsoup4>=4
 black>=19
+colorama>=0.4
 lxml>=4.5
 pyinstaller>=3.6
 pylint>=2.5
