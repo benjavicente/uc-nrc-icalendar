@@ -1,0 +1,82 @@
+# PyInstaller WorkFlow
+
+name: Build executable
+
+on:
+  workflow_dispatch:
+  # release:
+    # type: [published]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: [3.7]
+        os: [ubuntu-latest, macos-latest, windows-latest]  # TEST ONLY WITH UBUNTU
+        include:
+          - os: windows-latest
+            build-name : windows
+          - os: ubuntu-latest
+            build-name : ubuntu
+          - os: macos-latest
+            build-name : macos
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} build with python ${{ matrix.python-version }}
+
+    steps:
+    - name: set up Git
+      uses: actions/checkout@v2
+
+    - name: set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --no-cache-dir -r requirements.txt
+
+    - name: install Windows dependencies
+      if: matrix.os == 'windows-latest'
+      run: choco install zip
+
+    - name: run PyInstaller
+      shell: bash
+      run: |
+        cd src
+        python -m PyInstaller --clean build/uc-nrc-icalendar.spec
+
+    - name: compress Output
+      shell: bash
+      run: |
+        cd src/dist
+        zip -r ${{ matrix.build-name }}.zip *
+
+    - name: save executable as Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        path: src/dist/${{ matrix.build-name }}.zip
+
+    # Step 'upload Release Asset' returns ##[error]Not found
+
+    # - name: get last release
+    #   id: last-release
+    #   shell: bash
+    #   run: |
+    #     curl --request GET \
+    #     --url  https://api.github.com/repos/${{github.repository}}/releases/latest \
+    #     --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+    #     --header "Accept: application/vnd.github.v3+json" \
+    #     --output response.json
+
+    # - name: upload Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: $(cat response.json) | jq '.upload_url'
+    #     asset_path: src/dist/${{ matrix.build-name }}.zip
+    #     asset_name: ${{ matrix.build-name }}.zip
+    #     asset_content_type: application/zip

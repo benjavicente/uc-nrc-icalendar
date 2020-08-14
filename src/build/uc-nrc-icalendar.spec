@@ -1,12 +1,14 @@
 # -*- mode: python -*-
 # pylint: skip-file
 
+from os import path
+
 block_cipher = None
 
-a = Analysis(['..\\src\\gui.py'],
+a = Analysis([path.join('..', 'gui.py')],
              pathex=['build'],
              binaries=[],
-             datas=[('..\\assets', 'assets')],
+             datas=[(path.join('..', 'assets'), 'assets')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
