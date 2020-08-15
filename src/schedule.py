@@ -272,5 +272,6 @@ class Schedule:
 
 
 if __name__ == "__main__":
+    # Example
     x = Schedule.get(["20803"])
-    print(x.display(True), sep="\n")
+    print(x.display(True))

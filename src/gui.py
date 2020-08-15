@@ -2,7 +2,6 @@
 
 # Nota: El módulo debería funcionar también con PyQt
 
-
 import os
 import sys
 import webbrowser
@@ -120,13 +119,17 @@ class MainWindow(QMainWindow):
             section = calendars_menu.addMenu(calendar_group.name)
             for calendar in calendar_group.calendars:
                 option = section.addAction(calendar.name)
-                option.triggered.connect(lambda s=None, l=calendar.url: self.__to_clipboard(l))
+                option.triggered.connect(
+                    lambda s=None, l=calendar.url: self.__to_clipboard(l)
+                )
 
         go_to_menu = menu_bar.addMenu("&Ir a")
         for i, link_group in enumerate(LINKS):
             for link in link_group.links:
                 new_option = go_to_menu.addAction(link.description)
-                new_option.triggered.connect(lambda s=None, l=link.url: webbrowser.open(l))
+                new_option.triggered.connect(
+                    lambda s=None, l=link.url: webbrowser.open(l)
+                )
             if i - 1 != len(LINKS):
                 go_to_menu.addSeparator()
 
@@ -274,5 +277,6 @@ if __name__ == "__main__":
     app = QApplication([])
     window = MainWindow()
     window.show()
-    window.schedule_view.update_size()  # Esto no debería estar aquí, pero es donde funciona (creo)
+    # Esto no debería estar aquí, pero es donde funciona (creo)
+    window.schedule_view.update_size()
     sys.exit(app.exec_())
