@@ -14,7 +14,7 @@ test*.py
 editable_icon.svg
 
 # Enviroment
-env/
+.env/
 
 # Output
 output/
