@@ -12,10 +12,11 @@ disponibles en BuscaCursos.
 
 ## Descargar aplicación
 
-### [Windows] (45MB) - [MacOS] (36MB)
+### [Windows] (45MB) - [Ubuntu] (143MB) - _[MacOS]_ (36MB)
 
 > :warning: La aplicación puede ser bloqueada al ejecutarla
 > por primera vez ya que esta no tiene una firma digital.
+> MacOS no ha sido probado.
 > NO SE GARANTIZA QUE ESTA FUNCIONE.
 
 ## Descargar con git
@@ -72,5 +73,6 @@ python -m PyInstaller --clean "build/uc-nrc-icalendar.spec"
 
 [windows]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/windows.zip
 [macOS]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/macos.zip
+[ubuntu]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/ubuntu.zip
 [gg-import]: https://calendar.google.com/calendar/r/settings/export
 [venv-guide]: https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment
