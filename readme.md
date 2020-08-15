@@ -38,7 +38,7 @@ py -m venv .env
 .env\Scripts\activate
 ```
 
-En macOS y Linux>
+En macOS y Linux:
 
 ```shell
 python3 -m venv .env
