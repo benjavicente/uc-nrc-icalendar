@@ -8,9 +8,9 @@ import arrow
 
 # iCalendar
 
-FIRST_DAY = arrow.get(2020, 8, 10)
+FIRST_DAY = arrow.get(2021, 3, 15)
 
-LAST_DAY = arrow.get(2020, 12, 4).shift(days=1)
+LAST_DAY = arrow.get(2021, 7, 9).shift(days=1)
 
 MODULE_LENGTH = {"hours": 1, "minutes": 20}
 
@@ -26,18 +26,31 @@ MODULE_START_TIME = {
 }
 
 HOLIDAYS = (
-    arrow.get(2020, 8, 15),  # La Asunción de la Virgen
-    arrow.get(2020, 9, 17),  # Feriado
-    arrow.get(2020, 9, 18),  # 1ra Junta Nacional de Gobierno
-    arrow.get(2020, 9, 19),  # Día de las Glorias del Ejército
-    arrow.get(2020, 9, 21),  # Semana de receso
-    arrow.get(2020, 9, 22),  # Semana de receso
-    arrow.get(2020, 9, 23),  # Semana de receso
-    arrow.get(2020, 9, 24),  # Semana de receso
-    arrow.get(2020, 9, 25),  # Semana de receso
-    arrow.get(2020, 9, 26),  # Semana de receso
-    arrow.get(2020, 10, 12),  # Encuentro de Dos Mundos
-    arrow.get(2020, 10, 31),  # Día Nacional de las Iglesias Evangélicas y Protestantes
+    arrow.get(2021, 4, 2),    # Viernes santo
+    arrow.get(2021, 4, 3),    # Sábado Santo
+    arrow.get(2021, 5, 1),    # Día del trabajo
+    arrow.get(2021, 5, 10),   # Semana de receso
+    arrow.get(2021, 5, 11),   # Semana de receso
+    arrow.get(2021, 5, 12),   # Semana de receso
+    arrow.get(2021, 5, 13),   # Semana de receso
+    arrow.get(2021, 5, 14),   # Semana de receso
+    arrow.get(2021, 5, 15),   # Semana de receso
+    arrow.get(2021, 5, 21),   # Día de las Glorias Navales
+    arrow.get(2021, 6, 28),   # San Pedro y San Pablo
+    arrow.get(2021, 7, 16),   # Virgen del Carmen
+    arrow.get(2021, 8, 15),   # La Asunción de la Virgen
+    arrow.get(2021, 9, 18),   # 1ra Junta Nacional de Gobierno
+    arrow.get(2021, 9, 19),   # Día de las Glorias del Ejército
+    arrow.get(2021, 10, 4),   # Semana de receso
+    arrow.get(2021, 10, 5),   # Semana de receso
+    arrow.get(2021, 10, 6),   # Semana de receso
+    arrow.get(2021, 10, 7),   # Semana de receso
+    arrow.get(2021, 10, 8),   # Semana de receso
+    arrow.get(2021, 10, 9),   # Semana de receso
+    arrow.get(2021, 10, 11),  # Encuentro de Dos Mundos
+    arrow.get(2021, 10, 31),  # Día Nacional de las Iglesias Evangélicas y Protestantes
+    arrow.get(2021, 11, 1),   # Día de Todos los Santos
+
 )
 
 ICS_ARROW_DATETIME_FORMAT = "YYYYMMDDTHHmmss"
