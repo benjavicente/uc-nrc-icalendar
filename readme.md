@@ -1,5 +1,11 @@
 # NRC a iCalendar
 
+:warning: **Este programa no va a ser activamente mantenido.
+            Una versión web se encuentra disponible en
+            [open-source-uc/ucalendar][ucalendar].**
+
+---
+
 Aplicación que toma los horarios de BuscaCursos UC a partir de una
 lista de NRCs y crea un calendario en formato iCalendar que puede
 ser [importado a Google Calendar.][gg-import]
@@ -70,7 +76,7 @@ cd src
 python -m PyInstaller --clean "build/uc-nrc-icalendar.spec"
 ```
 
-
+[ucalendar]: https://github.com/open-source-uc/ucalendar/
 [windows]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/windows.zip
 [macOS]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/macos.zip
 [ubuntu]: https://github.com/benjavicente/uc-nrc-icalendar/releases/latest/download/ubuntu.zip
